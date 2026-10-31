@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contrail Flight Forecast</title>
+<meta name="description" content="Predict future airline flights from a year of real U.S. Department of Transportation flight records.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect width='14' height='14' rx='3' fill='%230a0a0a'/%3E%3Cpath d='M3 11 L11 3 L8.5 11 L7 8 Z' fill='white'/%3E%3C/svg%3E">
+<style>
+/* Layout: black hero with centered headline, search pill and a rounded sky "photo" card; a white sheet with rounded top corners holds the forecast; black closing band */
+:root{
+  --ink:#0a0a0a; --paper:#ffffff; --mist:#f4f5f6; --hair:#e6e7e9; --hair-dark:rgba(255,255,255,.14);
+  --text:#0a0a0a; --soft:#6b6f75; --soft-dark:#a7abb1;
+  --good:#1f7a4d; --warn:#a46a00; --crit:#b23a2a;
+  --f:"Inter Tight","Inter","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--ink)}
+body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--f);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.in{max-width:1240px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+
+/* nav */
+nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-block:22px;font-size:14px}
+nav .links{display:flex;gap:28px;color:#e8e8e8}
+nav .links a{color:inherit;text-decoration:none}
+nav .links a:hover{color:#fff}
+.mark{font-weight:500;letter-spacing:.14em;font-size:17px;display:flex;align-items:center;gap:6px;color:#fff}
+.mark svg{width:14px;height:14px}
+nav .right{justify-self:end}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:12px 22px;font-size:15px;font-weight:500;cursor:pointer;text-decoration:none;border:1px solid transparent;white-space:nowrap}
+.btn-white{background:#fff;color:var(--ink)}
+.btn-black{background:var(--ink);color:#fff}
+.btn-line{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btn-line-w{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
+.btn-sm{padding:9px 16px;font-size:14px}
+
+/* hero */
+.hero{text-align:center;padding-block:64px 0}
+h1{font-weight:400;font-size:clamp(36px,5.4vw,64px);line-height:1.08;letter-spacing:-.025em;margin:0 auto;max-width:16ch;text-wrap:balance}
+.hero p{max-width:52ch;margin:18px auto 0;color:#e2e2e2;font-size:18px}
+.search{margin:40px auto 0;max-width:1000px;background:#fff;color:var(--ink);border-radius:999px;padding:8px;display:grid;
+  grid-template-columns:1fr auto 1fr 1fr 1fr auto;align-items:center;text-align:left}
+.s-field{display:flex;flex-direction:column;padding:8px 22px;min-width:0;border-right:1px solid var(--hair)}
+.s-field:nth-of-type(4){border-right:0}
+.s-field label{font-size:12px;color:var(--soft)}
+.s-field input{border:0;background:transparent;padding:2px 0;font-size:16px;font-weight:500;width:100%;min-width:0}
+.s-field input:focus{outline:none}
+.s-field small{font-size:12px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swap{width:34px;height:34px;border-radius:50%;border:1px solid var(--hair);background:#fff;cursor:pointer;color:var(--ink);margin:0 -6px}
+.swap:hover{background:var(--mist)}
+.search .btn{padding:16px 26px}
+.err{color:#ffb4a8;font-size:14px;margin:14px 0 0}
+.photo{position:relative;margin-top:56px;border-radius:24px;overflow:hidden;aspect-ratio:2.35/1;max-width:100%;background:#9fbfdc}
+.photo canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.photo .cap{position:absolute;left:28px;bottom:24px;text-align:left;color:#fff;text-shadow:0 1px 18px rgba(0,0,0,.25)}
+.photo .cap b{display:block;font-weight:500;font-size:clamp(20px,2.4vw,30px);letter-spacing:-.01em}
+.photo .cap span{font-size:14px;opacity:.9}
+
+/* white sheet */
+.sheet{background:var(--paper);color:var(--text);border-radius:28px 28px 0 0;margin-top:72px}
+.sheet .in{padding-block:80px 96px}
+h2{font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
+.sub{color:var(--soft);font-size:18px;margin:12px 0 0;max-width:60ch}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.mapcard{border-radius:20px;overflow:hidden;background:var(--mist);aspect-ratio:1.45/1;position:relative;max-width:100%}
+.mapcard canvas{position:absolute;inset:0;width:100%;height:100%}
+.facts{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.facts li{padding:16px 0;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:2px}
+.facts b{font-weight:500;font-size:20px;font-variant-numeric:tabular-nums}
+.facts span{color:var(--soft);font-size:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
+
+.block{margin-top:96px}
+.head-row{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:28px}
+.tab{border:1px solid var(--hair);background:#fff;border-radius:999px;padding:10px 18px;font-size:15px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tools{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:22px 0 8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--hair);background:#fff;border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer;color:var(--soft)}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--mist)}
+.sortw{font-size:14px;color:var(--soft);display:flex;gap:8px;align-items:center}
+.sortw select{border:1px solid var(--hair);border-radius:999px;padding:7px 12px;background:#fff;color:var(--ink)}
+.note{color:var(--soft);font-size:14px;margin:0 0 4px}
+
+.rows{border-top:1px solid var(--hair)}
+.row{border-bottom:1px solid var(--hair)}
+.row > button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:210px minmax(0,1fr) 130px 150px 24px;gap:24px;align-items:center;padding:22px 4px}
+.row > button:hover{background:linear-gradient(90deg,transparent,var(--mist) 8%,var(--mist) 92%,transparent)}
+.row > button:focus-visible{outline:2px solid #3b82f6;outline-offset:-2px}
+.tm{font-size:22px;font-weight:500;letter-spacing:-.01em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tm sup{font-size:11px;color:var(--soft);margin-left:3px;font-weight:400}
+.who{font-size:14px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.path{display:flex;flex-direction:column;gap:8px;min-width:0}
+.path .ends{display:flex;justify-content:space-between;font-size:13px;color:var(--soft)}
+.bar{position:relative;height:1px;background:#c9ccd0}
+.bar i{position:absolute;top:-4px;width:9px;height:9px;border-radius:50%;background:#fff;border:1.5px solid var(--ink);transform:translateX(-50%)}
+.bar:after{content:"";position:absolute;right:0;top:-3px;border-left:7px solid #c9ccd0;border-top:3.5px solid transparent;border-bottom:3.5px solid transparent}
+.path .mid{font-size:13px;color:var(--text);text-align:center}
+.dur b{display:block;font-weight:500;font-size:16px}
+.dur span{font-size:13px;color:var(--soft)}
+.lk{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.lk b{font-weight:500;font-size:15px}
+.lk span{font-size:13px;color:var(--soft)}
+.meter{display:flex;gap:3px}
+.meter i{width:14px;height:4px;border-radius:2px;background:var(--hair)}
+.meter i.on{background:var(--ink)}
+.chev{transition:transform .25s;color:var(--soft)}
+.row > button[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.detail{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;padding:6px 4px 32px}
+.legs{display:flex;flex-direction:column;gap:12px}
+.leg{background:var(--mist);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.leg .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.leg .fn{font-weight:600;font-size:15px}
+.leg .t{font-size:15px;font-variant-numeric:tabular-nums}
+.leg .s{font-size:13px;color:var(--soft)}
+.lay{display:flex;align-items:center;gap:10px;font-size:14px;padding:0 6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.why h4{font-size:13px;font-weight:500;color:var(--soft);margin:0 0 10px;letter-spacing:.02em}
+.why ul{margin:0 0 22px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.why li{padding-left:18px;position:relative}
+.why li:before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--ink)}
+.fare{font-size:26px;font-weight:500;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.fare + p{margin:2px 0 18px;font-size:13px;color:var(--soft)}
+.more{margin-top:24px}
+.empty{padding:40px 0;color:var(--soft)}
+
+/* compare + week */
+.two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;margin-top:36px}
+.two>*,.split>*,.detail>*{min-width:0}
+.panel{background:var(--mist);border-radius:20px;padding:28px}
+.panel h3{margin:0 0 4px;font-weight:500;font-size:20px;letter-spacing:-.01em}
+.panel > p{margin:0 0 18px;color:var(--soft);font-size:14px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:14px 10px;border-bottom:1px solid #dfe1e4;white-space:nowrap}
+th{font-weight:500;font-size:13px;color:var(--soft)}
+td.n{font-variant-numeric:tabular-nums}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;height:180px;align-items:end}
+.week div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;height:100%}
+.week .b{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:#d3d6da;min-height:4px}
+.week .on .b{background:var(--ink)}
+.week em{font-style:normal;font-size:13px;color:var(--soft)}
+.week strong{font-weight:500;font-size:13px;font-variant-numeric:tabular-nums}
+
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;margin-top:36px}
+.step{border-top:1px solid var(--ink);padding-top:18px}
+.step b{display:block;font-weight:500;font-size:17px;margin-bottom:6px}
+.step p{margin:0;color:var(--soft);font-size:15px}
+
+/* closing */
+.close{text-align:center;padding-block:96px}
+.close h2{color:#fff}
+.close p{color:#cfcfcf;margin:14px auto 0;max-width:52ch;font-size:18px}
+.close .actions{justify-content:center}
+footer{border-top:1px solid var(--hair-dark);padding-block:28px 40px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;color:var(--soft-dark);font-size:13px}
+footer p{margin:0;max-width:70ch}
+
+@media (max-width:1000px){
+  .search{border-radius:24px;grid-template-columns:1fr auto 1fr;gap:4px}
+  .s-field{border-right:0}
+  .search .s-date{grid-column:span 1}
+  .search .s-d1{grid-column:1}
+  .search .s-d2{grid-column:3}
+  .search .btn{grid-column:1 / -1;margin-top:4px}
+  .split,.two,.detail{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .row > button{grid-template-columns:1fr auto;gap:12px 16px}
+  .path{grid-column:1 / -1;grid-row:2}
+  .dur{grid-row:3}
+  .lk{grid-row:3;grid-column:2}
+  .chev{display:none}
+  nav .links{display:none}
+  nav{grid-template-columns:1fr auto}
+  .photo{aspect-ratio:1.5/1}
+}
+@media (max-width:560px){
+  .search{grid-template-columns:1fr}
+  .swap{justify-self:center;transform:rotate(90deg);margin:-8px 0}
+  .search .s-d1,.search .s-d2{grid-column:1}
+  .s-field{border-bottom:1px solid var(--hair)}
+  .steps,.facts{grid-template-columns:1fr}
+  .hero{padding-block:36px 0}
+  .photo .cap{left:18px;bottom:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.loading{padding:40px 0;color:var(--soft);display:flex;gap:12px;align-items:center}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--hair);border-top-color:var(--ink);animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stat3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.stat3 div{background:var(--mist);border-radius:12px;padding:12px 14px}
+.stat3 b{display:block;font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.stat3 span{font-size:12px;color:var(--soft)}
+.datanote{display:inline-flex;gap:8px;align-items:center;margin-top:18px;font-size:13px;color:#cfcfcf;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 14px}
+.datanote i{width:7px;height:7px;border-radius:50%;background:#5fd38d}
+</style>
+</head>
+<body>
+<div class="in">
+  <nav>
+    <div class="links"><a href="#flights">Flights</a><a href="#compare">Airlines</a><a href="#how">How it works</a></div>
+    <div class="mark">CONTRAIL <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 13 L13 1 L9 13 L7 8 Z" fill="#fff"/></svg></div>
+    <div class="right"><a class="btn btn-white btn-sm" href="#top-search">Find a flight</a></div>
+  </nav>
+
+  <header class="hero">
+    <h1>See your flight before it's on sale</h1>
+    <p>Contrail predicts flights from a year of real flight records published by the U.S. Department of Transportation.</p>
+    <form class="search" id="f" novalidate>
+      <div class="s-field" id="top-search"><label for="from">From</label><input id="from" list="aps" autocomplete="off" value="BWI"><small id="fromName">&nbsp;</small></div>
+      <button type="button" class="swap" id="swap" aria-label="Swap airports">⇄</button>
+      <div class="s-field"><label for="to">To</label><input id="to" list="aps" autocomplete="off" value="DAB"><small id="toName">&nbsp;</small></div>
+      <div class="s-field s-d1"><label for="d1">Depart</label><input id="d1" type="date"><small>&nbsp;</small></div>
+      <div class="s-field s-d2"><label for="d2">Return</label><input id="d2" type="date"><small>Optional</small></div>
+      <button class="btn btn-black" type="submit">Forecast</button>
+    </form>
+    <p class="err" id="err" hidden></p>
+    <div class="datanote" id="dataNote"><i></i><span>Loading flight records…</span></div>
+    <div class="photo"><canvas id="sky" aria-hidden="true"></canvas>
+      <div class="cap"><b id="capBig">&nbsp;</b><span id="capSub"></span></div></div>
+    <datalist id="aps"></datalist>
+  </header>
+</div>
+
+<main class="sheet">
+  <div class="in">
+    <section class="split" id="forecast">
+      <div>
+        <h2 id="rtTitle">&nbsp;</h2>
+        <p class="sub" id="rtSub"></p>
+        <ul class="facts" id="facts"></ul>
+        <div class="actions"><a class="btn btn-black" href="#flights">See predicted flights</a><a class="btn btn-line" id="priceLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a></div>
+      </div>
+      <div class="mapcard"><canvas id="map" aria-hidden="true"></canvas></div>
+    </section>
+
+    <section class="block" id="flights">
+      <div class="head-row"><div><h2>Predicted flights</h2><p class="sub">Tap a flight to see its flight numbers, track record and why we expect it.</p></div></div>
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="tools"><div class="chips" id="chips"></div>
+        <label class="sortw" for="sort">Sort <select id="sort"><option value="dep">Earliest</option><option value="dur">Shortest</option><option value="conf">Most likely</option><option value="ot">Most on time</option></select></label></div>
+      <p class="note" id="note"></p>
+      <div class="rows" id="list"><div class="loading"><span class="spin"></span>Loading flight records…</div></div>
+    </section>
+
+    <section class="block" id="compare">
+      <h2>Compare airlines</h2>
+      <p class="sub">Who flies this trip, how they route it, and how often their flights arrive on time.</p>
+      <div class="two">
+        <div class="panel"><h3>Airlines on this route</h3><p id="cmpSub"></p><div class="tablewrap"><table id="cmp"></table></div></div>
+        <div class="panel"><h3>Options by day of week</h3><p>Predicted flights each day, same route.</p><div class="week" id="week"></div></div>
+      </div>
+    </section>
+
+    <section class="block" id="how">
+      <h2>How the forecast works</h2>
+      <p class="sub">Airlines repeat their schedules. Contrail reads what actually flew and assumes the pattern continues.</p>
+      <div class="steps">
+        <div class="step"><b>Real flight records</b><p>Every domestic flight by major U.S. airlines, from the Department of Transportation. Updated monthly.</p></div>
+        <div class="step"><b>Same season last year</b><p>For your date, we check which flights ran on that weekday in the same month a year ago.</p></div>
+        <div class="step"><b>Still flying lately</b><p>We check the most recent months too. A flight that ran both times is very likely to run again.</p></div>
+        <div class="step"><b>Track record</b><p>Each flight shows how often it arrived on time and how often it was cancelled.</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<section class="in close">
+  <h2>Ready to book?</h2>
+  <p>Contrail tells you what's likely to fly. Check prices and book with the airline or a booking site.</p>
+  <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a></div>
+</section>
+<div class="in"><footer><span>© 2026 Contrail</span><p>Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
+<script src="app.js"></script>
+</body>
+</html>

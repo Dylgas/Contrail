@@ -1,0 +1,58 @@
+name: Update flight data and publish site
+
+on:
+  schedule:
+    - cron: "23 10 18 * *"   # monthly, after BTS posts new data
+  workflow_dispatch:          # "Run workflow" button
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r pipeline/requirements.txt
+
+      - name: Reuse downloaded government files
+        uses: actions/cache@v4
+        with:
+          path: cache
+          key: bts-${{ github.run_id }}
+          restore-keys: bts-
+
+      - name: Build flight data from BTS records
+        run: python pipeline/build.py --out site/data --cache cache
+
+      - name: Drop downloads older than 18 months from the cache
+        run: find cache -name "*.zip" -mtime +550 -delete || true
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
