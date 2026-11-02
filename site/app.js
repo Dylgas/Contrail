@@ -100,17 +100,25 @@ function dist(a, b) { const A = AP[a], B = AP[b]; if (!A || !B || A.la == null |
 // so one timetable slot counts as one flight, shown under its most recent flight number.
 function mergeSlots(rows) {
   const n = META.months.length * 7, groups = [];
+  const months = r => { const m = new Set(); for (let i = 0; i < r[10].length; i++) if (+r[10][i]) m.add(Math.floor(i / 7)); return m; };
   const lastActive = r => { for (let i = r[10].length - 1; i >= 0; i--) if (+r[10][i]) return i; return -1; };
-  const sorted = rows.slice().sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : mins(a[3]) - mins(b[3]));
-  for (const r of sorted) {
-    // Chain slots whose times drift a little month to month (Southwest moves times 5-15 minutes at a time).
-    const g = groups.length && groups[groups.length - 1];
-    if (g && g.c === r[0] && mins(r[3]) - g.last <= 15) { g.rows.push(r); g.last = mins(r[3]); }
-    else groups.push({c: r[0], last: mins(r[3]), rows: [r]});
+  for (const r of rows.slice().sort((a, b) => mins(a[3]) - mins(b[3]))) {
+    // Link a flight number to an earlier slot only when it looks like a replacement: same airline,
+    // within 30 minutes of that slot's latest time, and the two barely flew in the same months.
+    const rm = months(r), t = mins(r[3]);
+    let best = null, bestGap = 99;
+    for (const g of groups) {
+      if (g.c !== r[0]) continue;
+      const gap = Math.min(...g.times.map(x => Math.abs(x - t))); if (gap > 30 || gap >= bestGap) continue;
+      let both = 0; rm.forEach(m => { if (g.months.has(m)) both++; });
+      if (both <= Math.max(1, Math.floor(Math.min(rm.size, g.months.size) / 3))) { best = g; bestGap = gap; }
+    }
+    if (best) { best.rows.push(r); best.times.push(t); rm.forEach(m => best.months.add(m)); }
+    else groups.push({c: r[0], times: [t], months: rm, rows: [r]});
   }
   return groups.map(g => {
     if (g.rows.length === 1) return g.rows[0];
-    const lead = g.rows.reduce((a, b) => lastActive(b) > lastActive(a) || (lastActive(b) === lastActive(a) && b[10] > a[10]) ? b : a);
+    const lead = g.rows.reduce((a, b) => lastActive(b) > lastActive(a) ? b : a);
     let grid = ""; for (let i = 0; i < n; i++) grid += Math.min(9, g.rows.reduce((s, r) => s + (+r[10][i] || 0), 0));
     return [...lead.slice(0, 10), grid];
   });
