@@ -189,7 +189,7 @@ const wdate = t => new Date(Date.UTC(t.y, t.m - 1, t.d, 12)).getTimezoneOffset()
 function renderPrices() {
   const box = $("#priceBox"); box.innerHTML = "";
   const q = new URLSearchParams({currency: "usd", trs: PROJECT, shmarker: MARKER, powered_by: "true", locale: "en",
-    from_name: S.o, to_name: S.d, departure: wdate(S.d1), show_header: "true", limit: "10",
+    from_name: S.o, to_name: S.d, departure: wdate(S.d1), show_header: "true", limit: "5",
     primary_color: "0A0A0A", results_background_color: "FFFFFF", form_background_color: "F4F5F6", campaign_id: "111", promo_id: "4478"});
   if (S.d2) q.set("return", wdate(S.d2));
   const sc = document.createElement("script"); sc.async = true; sc.charset = "utf-8";
