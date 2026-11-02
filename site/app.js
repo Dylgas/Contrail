@@ -181,6 +181,7 @@ function renderAll() {
     : r.length ? `No nonstop has flown this route recently. The likely trips connect in ${hubs.slice(0, 2).join(" or ")}.`
     : "No airline in the records flies this trip, even with one stop.";
   $("#priceLink").href = $("#realLink").href = gf(o, d, S.d1);
+  $("#results").hidden = false;
   renderFacts(); renderTabs(); renderChips(); renderList(); renderWeek(); renderCompare(); setRoute();
 }
 
@@ -334,8 +335,7 @@ function frame(now) { drawMap(now); requestAnimationFrame(frame); }
 /* ---------- boot ---------- */
 async function boot() {
   const t = todayLocal(); let dep = addDays(t, 7); while (wd(dep) !== 4) dep = addDays(dep, 1);
-  if (!$("#d1").value) $("#d1").value = iso(dep);
-  if (!$("#d2").value) $("#d2").value = iso(addDays(dep, 6));
+  const nextFri = dep;
   requestAnimationFrame(frame);
   { const im = new Image(); im.onload = () => $("#closeBand").classList.add("has-img"); im.src = "img/close.jpg"; }
   try { [META, AP] = await Promise.all([getJSON("meta.json"), getJSON("airports.json")]); }
@@ -343,10 +343,19 @@ async function boot() {
   $("#dataNote span").textContent = `Real flight records, ${monthName(META.months[0])} – ${monthName(META.months[META.months.length - 1])}`;
   $("#aps").innerHTML = Object.entries(AP).sort((a, b) => (b[1].d || 0) - (a[1].d || 0)).map(([k, a]) => `<option value="${k}">${a.c} · ${a.n}</option>`).join("");
   ["from", "to"].forEach(id => $("#" + id).addEventListener("input", nameHints));
-  $("#swap").onclick = () => { const a = $("#from").value; $("#from").value = $("#to").value; $("#to").value = a; nameHints(); run(); };
+  $("#swap").onclick = () => { const a = $("#from").value; $("#from").value = $("#to").value; $("#to").value = a; nameHints(); if ($("#from").value && $("#to").value && $("#d1").value) run(); };
   $("#f").addEventListener("submit", async e => { e.preventDefault(); if (await run()) document.getElementById("forecast").scrollIntoView({behavior: reduce ? "auto" : "smooth"}); });
   $("#sort").onchange = e => { S.sort = e.target.value; renderList(); };
-  nameHints(); run();
+  const POP = [["BWI","MCO"],["JFK","LAX"],["ATL","MIA"],["ORD","DEN"],["DCA","BOS"],["DFW","LAS"],["SEA","SFO"],["BWI","DAB"]]
+    .filter(([a, b]) => AP[a] && AP[b]);
+  $("#routes").innerHTML = POP.map(([a, b]) => `<button class="route" data-o="${a}" data-d="${b}" type="button"><b>${a} → ${b}</b><span>${AP[a].c} to ${AP[b].c}</span></button>`).join("");
+  $("#routes").querySelectorAll("button").forEach(btn => btn.onclick = async () => {
+    $("#from").value = btn.dataset.o; $("#to").value = btn.dataset.d;
+    if (!$("#d1").value) $("#d1").value = iso(nextFri);
+    nameHints();
+    if (await run()) document.getElementById("forecast").scrollIntoView({behavior: reduce ? "auto" : "smooth"});
+  });
+  if (!POP.length) $("#popular").hidden = true;
 }
 boot();
 })();
