@@ -178,7 +178,22 @@ const idOf = it => it.legs.map(l => l.c + l.fn + l.from).join("-");
 const confWord = c => c >= 85 ? "Very likely" : c >= 65 ? "Likely" : c >= 45 ? "Possible" : "Long shot";
 const meter = c => { const n = c >= 85 ? 4 : c >= 65 ? 3 : c >= 45 ? 2 : 1; return `<span class="meter" aria-hidden="true">${[0,1,2,3].map(i => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>`; };
 const riskOf = m => m < 55 ? ["Tight connection", "var(--warn)"] : m > 180 ? ["Long wait", "var(--soft)"] : ["Comfortable connection", "var(--good)"];
-const gf = (o, d, t, extra = "") => "https://www.google.com/travel/flights?q=" + encodeURIComponent(`Flights from ${o} to ${d} on ${iso(t)} ${extra}`.trim());
+const MARKER = "799756", PROJECT = "594943";
+const ddmm = t => String(t.d).padStart(2, "0") + String(t.m).padStart(2, "0");
+// Aviasales search link carrying the Contrail partner ID, so bookings earn a commission.
+const gf = (o, d, t, _extra, back) => `https://www.aviasales.com/search/${o}${ddmm(t)}${d}${back ? ddmm(back) : ""}1?marker=${MARKER}`;
+function renderPrices() {
+  const box = $("#priceBox"); box.innerHTML = "";
+  const q = new URLSearchParams({currency: "usd", trs: PROJECT, shmarker: MARKER, powered_by: "true", locale: "en",
+    from_name: S.o, to_name: S.d, departure: iso(S.d1), show_header: "true", limit: "10",
+    primary_color: "0A0A0A", results_background_color: "FFFFFF", form_background_color: "F4F5F6", campaign_id: "111", promo_id: "4478"});
+  if (S.d2) q.set("return", iso(S.d2));
+  const sc = document.createElement("script"); sc.async = true; sc.charset = "utf-8";
+  sc.src = "https://tpscr.com/content?" + q.toString();
+  sc.onerror = () => { box.innerHTML = `<div class="empty">Live prices didn't load. <a href="${gf(S.o, S.d, S.d1, "", S.d2)}" target="_blank" rel="noopener">See prices on Aviasales ↗</a></div>`; };
+  box.appendChild(sc);
+  $("#priceSub").textContent = `Real fares for ${S.o} to ${S.d}, ${nice(S.d1)}${S.d2 ? " – " + nice(S.d2) : ""}. Pick one to finish booking with Kiwi.com, which issues your ticket and handles any changes.`;
+}
 
 function renderAll() {
   const o = S.o, d = S.d, r = S.res[0];
@@ -190,9 +205,8 @@ function renderAll() {
   $("#rtSub").textContent = ns ? `${ns} nonstop flight${ns > 1 ? "s" : ""} likely on ${nice(S.d1)}${hubs.length ? ", plus connections" : ""}.`
     : r.length ? `No nonstop has flown this route recently. The likely trips connect in ${hubs.slice(0, 2).join(" or ")}.`
     : "No airline in the records flies this trip, even with one stop.";
-  $("#priceLink").href = $("#realLink").href = gf(o, d, S.d1);
   $("#results").hidden = false;
-  renderFacts(); renderTabs(); renderChips(); renderList(); renderCal(); renderBest(); renderCompare(); setRoute();
+  renderFacts(); renderTabs(); renderChips(); renderList(); renderCal(); renderBest(); renderCompare(); renderPrices(); setRoute();
   $("#copied").textContent = "";
 }
 
@@ -304,7 +318,7 @@ function detail(it, o, d, t) {
   return `<div class="detail"><div class="legs">${legs}</div><div class="why">
     ${sale}<h4>Track record over the past year</h4>${s3}
     <h4>Why we predict this</h4><ul>${why}</ul>
-    <a class="btn btn-black btn-sm" href="${gf(o, d, t, al(it.c))}" target="_blank" rel="noopener">See prices and book ↗</a></div></div>`;
+    <div class="why-actions"><a class="btn btn-black btn-sm" href="#prices">See live prices</a><a class="btn btn-line btn-sm" href="${gf(o, d, t)}" target="_blank" rel="noopener">Compare on Aviasales ↗</a></div></div></div>`;
 }
 
 async function renderCal() {

@@ -94,6 +94,10 @@ h2{font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.02em;line-h
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
 
 .block{margin-top:96px}
+.pricebox{margin-top:28px;background:var(--mist);border-radius:20px;padding:16px;min-height:220px;overflow:hidden}
+.pricebox > *{max-width:100%}
+.disclose{margin:14px 0 0;font-size:13px;color:var(--soft);max-width:80ch}
+
 .copied{margin:10px 0 0;font-size:14px;color:var(--good);min-height:1.5em}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .cal .h{font-size:12px;color:var(--soft);text-align:center;padding-bottom:2px}
@@ -258,7 +262,7 @@ footer p{margin:0;max-width:70ch}
 <body>
 <div class="in">
   <nav>
-    <div class="links"><a href="#flights">Flights</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#how">How it works</a></div>
+    <div class="links"><a href="#flights">Flights</a><a href="#prices">Prices</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#how">How it works</a></div>
     <div class="mark">CONTRAIL <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 13 L13 1 L9 13 L7 8 Z" fill="#fff"/></svg></div>
     <div class="right"><a class="btn btn-white btn-sm" href="#top-search">Find a flight</a></div>
   </nav>
@@ -296,7 +300,7 @@ footer p{margin:0;max-width:70ch}
         <h2 id="rtTitle">&nbsp;</h2>
         <p class="sub" id="rtSub"></p>
         <ul class="facts" id="facts"></ul>
-        <div class="actions"><a class="btn btn-black" href="#flights">See predicted flights</a><a class="btn btn-line" id="priceLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a><button class="btn btn-line" id="share" type="button">Copy link to this search</button></div>
+        <div class="actions"><a class="btn btn-black" href="#flights">See predicted flights</a><a class="btn btn-line" id="priceLink" href="#prices">See live prices</a><button class="btn btn-line" id="share" type="button">Copy link to this search</button></div>
         <p class="copied" id="copied" role="status"></p>
       </div>
       <div class="mapcard"><canvas id="map" aria-hidden="true"></canvas></div>
@@ -309,6 +313,13 @@ footer p{margin:0;max-width:70ch}
         <label class="sortw" for="sort">Sort <select id="sort"><option value="dep">Earliest</option><option value="dur">Shortest</option><option value="conf">Most likely</option><option value="ot">Most on time</option></select></label></div>
       <p class="note" id="note"></p>
       <div class="rows" id="list"><div class="loading"><span class="spin"></span>Loading flight records…</div></div>
+    </section>
+
+    <section class="block" id="prices">
+      <h2>Live prices</h2>
+      <p class="sub" id="priceSub">Real fares for your dates. Pick one to finish booking with Kiwi.com, which issues your ticket and handles any changes.</p>
+      <div class="pricebox" id="priceBox"><div class="loading"><span class="spin"></span>Loading live prices…</div></div>
+      <p class="disclose">Prices come from Kiwi.com and can change until you book. Contrail may earn a small commission when you book through these links, at no extra cost to you.</p>
     </section>
 
     <section class="block" id="when">
@@ -342,10 +353,10 @@ footer p{margin:0;max-width:70ch}
 
 <div class="in"><section class="close" id="closeBand">
   <h2>Ready to book?</h2>
-  <p>Contrail tells you what's likely to fly. Check prices and book with the airline or a booking site.</p>
-  <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a></div>
+  <p>Contrail tells you what's likely to fly and shows live prices. When you book, your ticket is issued by our booking partner.</p>
+  <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="#prices">See live prices</a></div>
 </section></div>
 <div class="in"><footer><span>© 2026 Contrail</span><p>Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
