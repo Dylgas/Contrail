@@ -95,10 +95,30 @@ function dist(a, b) { const A = AP[a], B = AP[b]; if (!A || !B || A.la == null |
   const r = x => x * Math.PI / 180, dl = r(B.la - A.la), dn = r(B.lo - A.lo);
   const h = Math.sin(dl/2)**2 + Math.cos(r(A.la)) * Math.cos(r(B.la)) * Math.sin(dn/2)**2; return 2 * 3958.8 * Math.asin(Math.sqrt(h)); }
 
+// Some airlines (Southwest especially) renumber flights every few weeks while keeping the same
+// departure time. Group each airline's flights on a route by departure time (within 10 minutes)
+// so one timetable slot counts as one flight, shown under its most recent flight number.
+function mergeSlots(rows) {
+  const n = META.months.length * 7, groups = [];
+  const recent = r => { let x = 0; for (let i = r[10].length - 21; i < r[10].length; i++) x += +r[10][i] || 0; return x; };
+  for (const r of rows.slice().sort((a, b) => mins(a[3]) - mins(b[3]))) {
+    const g = groups.find(g => g.c === r[0] && Math.abs(mins(g.dep) - mins(r[3])) <= 10);
+    if (g) g.rows.push(r); else groups.push({c: r[0], dep: r[3], rows: [r]});
+  }
+  return groups.map(g => {
+    if (g.rows.length === 1) return g.rows[0];
+    const lead = g.rows.reduce((a, b) => recent(b) > recent(a) ? b : a);
+    let grid = ""; for (let i = 0; i < n; i++) grid += Math.min(9, g.rows.reduce((s, r) => s + (+r[10][i] || 0), 0));
+    return [...lead.slice(0, 10), grid];
+  });
+}
+const mergedCache = new WeakMap();
+function merged(table) { let m = mergedCache.get(table); if (!m) { m = {}; for (const k of Object.keys(table)) m[k] = mergeSlots(table[k]); mergedCache.set(table, m); } return m; }
+
 async function forecast(o, d, t) {
   let out = {}, inn = {};
-  try { out = await getJSON(`out/${o}.json`); } catch (e) {}
-  try { inn = await getJSON(`in/${d}.json`); } catch (e) {}
+  try { out = merged(await getJSON(`out/${o}.json`)); } catch (e) {}
+  try { inn = merged(await getJSON(`in/${d}.json`)); } catch (e) {}
   const its = [];
   for (const row of out[d] || []) {
     const leg = legOf(row, o, d, t);
