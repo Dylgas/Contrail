@@ -15,6 +15,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contrail Flight Forecast</title>
 <meta name="description" content="Predict future airline flights from a year of real U.S. Department of Transportation flight records.">
+<link rel="canonical" href="https://dylgas.github.io/Contrail/">
+<meta property="og:title" content="Contrail Flight Forecast"><meta property="og:description" content="See your flight before it's on sale. Predictions from real U.S. flight records, with on-time history and live prices.">
+<meta property="og:image" content="https://dylgas.github.io/Contrail/img/hero.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect width='14' height='14' rx='3' fill='%230a0a0a'/%3E%3Cpath d='M3 11 L11 3 L8.5 11 L7 8 Z' fill='white'/%3E%3C/svg%3E">
@@ -94,6 +97,13 @@ h2{font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.02em;line-h
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
 
 .block{margin-top:96px}
+.pbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--ink);color:#fff;font-size:15px;
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+@media (max-width:760px){.pbar:not([hidden]){display:flex}}
+.money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;margin-top:36px}
+.money div{border-top:1px solid var(--ink);padding-top:18px}.money b{display:block;font-weight:500;font-size:17px;margin-bottom:6px}.money p{margin:0;color:var(--soft);font-size:15px}
+@media (max-width:1000px){.money{grid-template-columns:1fr}}
+
 .helpsplit{align-items:start}
 .helpform{display:flex;flex-direction:column;gap:14px;background:var(--mist);border-radius:20px;padding:24px}
 .hf-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -381,6 +391,17 @@ footer p{margin:0;max-width:70ch}
         <div class="step"><b>Track record</b><p>Each flight shows how often it arrived on time and how often it was cancelled.</p></div>
       </div>
     </section>
+
+    <section class="block" id="about">
+      <h2>How Contrail makes money</h2>
+      <p class="sub">Contrail is free. When you book through our live prices or partner links, the booking site pays us a small commission. Your price stays the same.</p>
+      <div class="money">
+        <div><b>Predictions stay neutral</b><p>Which flights we predict comes only from the flight records. Partners can't pay to rank higher.</p></div>
+        <div><b>You book with the seller</b><p>Kiwi.com or the airline issues your ticket and handles changes and refunds. We never see your payment details.</p></div>
+        <div><b>Independent and small</b><p>Contrail is an independent project, not an airline or travel agency. Questions go straight to us through the help form.</p></div>
+      </div>
+      <p class="note" style="margin-top:28px"><a href="routes/">Browse popular routes</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
+    </section>
   </div>
 </main>
 
@@ -389,7 +410,8 @@ footer p{margin:0;max-width:70ch}
   <p>Contrail tells you what's likely to fly and shows live prices. When you book, your ticket is issued by our booking partner.</p>
   <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="#prices">See live prices</a></div>
 </section></div>
-<div class="in"><footer><span>© 2026 Contrail</span><p>Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
-<script src="app.js?v=14"></script>
+<div class="in"><footer><span>© 2026 Contrail</span><p><a href="privacy.html" style="color:inherit">Privacy</a> · <a href="terms.html" style="color:inherit">Terms</a> · <a href="routes/" style="color:inherit">Routes</a>. Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
+<div class="pbar" id="pbar" hidden><span id="pbarText"></span><a class="btn btn-white btn-sm" href="#prices">See live prices</a></div>
+<script src="app.js?v=15"></script>
 </body>
 </html>

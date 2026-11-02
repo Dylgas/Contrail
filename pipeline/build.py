@@ -194,7 +194,14 @@ def build(months, cache, out):
             with open(os.path.join(out, kind, f"{ap}.json"), "w") as f:
                 json.dump(rows, f, separators=(",", ":"))
 
-    write_airports(out, airports_used, out_by)
+    airports = write_airports(out, airports_used, out_by)
+    try:
+        from routes import write_route_pages
+        site_url = os.environ.get("SITE_URL", "https://dylgas.github.io/Contrail/")
+        n_pages = write_route_pages(os.path.dirname(os.path.abspath(out)), out_by, airports, keys, site_url)
+        log(f"Wrote {n_pages} route pages")
+    except Exception as e:  # route pages are extra; never block the data update
+        log(f"Route pages skipped: {e}")
     meta = {"months": keys, "generated": dt.date.today().isoformat(), "source": "U.S. DOT Bureau of Transportation Statistics",
             "fields": ["carrier", "flight", "operator", "dep", "arr", "minutes", "miles", "ontime_pct", "cancel_pct", "avg_delay", "weekday_grid"]}
     with open(os.path.join(out, "meta.json"), "w") as f:
@@ -216,6 +223,7 @@ def write_airports(out, used, out_by):
         v["d"] = sum(len(x) for x in out_by.get(code, {}).values())  # weekly departures (rough size)
     with open(os.path.join(out, "airports.json"), "w") as f:
         json.dump(res, f, separators=(",", ":"))
+    return res
 
 
 def recent_months(n, today=None):

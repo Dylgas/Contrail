@@ -21,6 +21,9 @@ The site predicts a flight on a future date when it flew on that weekday in the 
 - A month calendar of likely flights per day and the best time of day to fly.
 - On-sale dates, with a calendar reminder for trips more than about 11 months away.
 - Shareable links, such as `#BWI-MCO-20261204`.
+- Live prices from Kiwi.com and partner links through Travelpayouts (partner ID 799756).
+- Route pages for the 400 busiest routes at `/routes/`, plus `sitemap.xml`, rebuilt monthly.
+- A trip help form (Formspree), and Privacy and Terms pages.
 
 ## Limits
 

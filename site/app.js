@@ -197,10 +197,12 @@ async function run() {
   return true;
 }
 function fromHash() {
-  const m = /^#([A-Z0-9]{3})-([A-Z0-9]{3})-(\d{8})(?:-(\d{8}))?$/.exec(location.hash || "");
+  const m = /^#([A-Z0-9]{3})-([A-Z0-9]{3})(?:-(\d{8}))?(?:-(\d{8}))?$/.exec(location.hash || "");
   if (!m) return false;
   const f = x => x ? `${x.slice(0,4)}-${x.slice(4,6)}-${x.slice(6)}` : "";
-  $("#from").value = m[1]; $("#to").value = m[2]; $("#d1").value = f(m[3]); $("#d2").value = f(m[4]);
+  // A link with only airports (from a route page) starts on the next Friday at least a week out.
+  let first = f(m[3]); if (!first) { let x = addDays(todayLocal(), 7); while (wd(x) !== 4) x = addDays(x, 1); first = iso(x); }
+  $("#from").value = m[1]; $("#to").value = m[2]; $("#d1").value = first; $("#d2").value = f(m[4]);
   return true;
 }
 
@@ -241,6 +243,7 @@ function renderAll() {
     : r.length ? `No nonstop has flown this route recently. The likely trips connect in ${hubs.slice(0, 2).join(" or ")}.`
     : "No airline in the records flies this trip, even with one stop.";
   $("#results").hidden = false;
+  $("#pbarText").textContent = `${S.o} → ${S.d} · ${nice(S.d1)}`;
   renderFacts(); renderTabs(); renderChips(); renderList(); renderCal(); renderBest(); renderCompare(); renderPrices(); prefillTrip(); setRoute();
   $("#copied").textContent = "";
 }
@@ -495,6 +498,11 @@ async function boot() {
     catch (e) { $("#copied").textContent = url; }
   };
   setupHelp();
+  const bar = $("#pbar"), prices = $("#prices");
+  const io = new IntersectionObserver(es => { for (const e of es) S.priceVisible = e.isIntersecting; showBar(); }, {threshold: 0.05});
+  io.observe(prices);
+  function showBar() { bar.hidden = !(S.o && !$("#results").hidden && !S.priceVisible && scrollY > 500); }
+  addEventListener("scroll", showBar, {passive: true});
   window.addEventListener("hashchange", () => { if (fromHash()) { nameHints(); run(); } });
   if (fromHash()) { nameHints(); if (await run()) document.getElementById("forecast").scrollIntoView(); }
 }
