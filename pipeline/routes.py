@@ -55,7 +55,7 @@ footer{border-top:1px solid var(--hair);color:var(--soft);font-size:13px}footer 
 """
 
 
-def page(o, d, A, active, per_day, rows_all, month_label, site_url, related):
+def page(o, d, A, active, per_day, rows_all, month_label, site_url, related, days_in=30):
     oc, dc = A[o]["c"], A[d]["c"]
     title = f"{oc} ({o}) to {dc} ({d}) flights: schedule and on-time record"
     by_air = {}
@@ -72,8 +72,8 @@ def page(o, d, A, active, per_day, rows_all, month_label, site_url, related):
     rows_html = "".join(
         f"<tr><td class='n'>{clock(r[3])}</td><td>{html.escape(AIRLINE.get(r[0], r[0]))} {r[0]} {r[1]}</td>"
         f"<td class='n'>{hm(r[5]) if r[5] else '—'}</td><td class='n'>{str(r[7]) + '%' if r[7] is not None else '—'}</td>"
-        f"<td class='n'>{flown}×/wk avg</td></tr>"
-        for r, flown in sorted(active, key=lambda x: x[0][3])[:30])
+        f"<td class='n'>{flown} of {days_in}</td></tr>"
+        for r, flown in sorted([a for a in active if a[1] >= 4] or active, key=lambda x: x[0][3])[:40])
     air_rows = "".join(
         f"<tr><td>{html.escape(AIRLINE.get(c, c))}</td><td class='n'>{len(v)}</td>"
         f"<td class='n'>{clock(min(x[0][3] for x in v))} – {clock(max(x[0][3] for x in v))}</td></tr>"
@@ -104,8 +104,8 @@ def page(o, d, A, active, per_day, rows_all, month_label, site_url, related):
 <h2>Airlines on this route</h2>
 <div class="tw"><table><thead><tr><th>Airline</th><th>Flight numbers</th><th>Departures</th></tr></thead><tbody>{air_rows}</tbody></table></div>
 <h2>Flights in {month_label}</h2>
-<p class="note">Scheduled departures from {o} in local time, with each flight's on-time record. First flight {clock(deps[0])}, last flight {clock(deps[-1])}.</p>
-<div class="tw"><table><thead><tr><th>Departs</th><th>Flight</th><th>Time</th><th>On time</th><th>Frequency</th></tr></thead><tbody>{rows_html}</tbody></table></div>
+<p class="note">Regular departures from {o} in local time (flights that flew at least 4 days that month), with each flight's on-time record and how many days of {month_label} it flew. First flight {clock(deps[0])}, last flight {clock(deps[-1])}.</p>
+<div class="tw"><table><thead><tr><th>Departs</th><th>Flight</th><th>Time</th><th>On time</th><th>Days flown</th></tr></thead><tbody>{rows_html}</tbody></table></div>
 <p style="margin-top:28px"><a class="btn" href="../../#{o}-{d}">Predict flights for your date</a></p>
 {f"<h2>More routes</h2><ul class='links'>{rel}</ul>" if rel else ""}
 </div></main>
@@ -137,7 +137,7 @@ def write_route_pages(site_dir, out_by, A, month_keys, site_url):
         p = os.path.join(root, f"{o}-{d}")
         os.makedirs(p, exist_ok=True)
         with open(os.path.join(p, "index.html"), "w", encoding="utf-8") as f:
-            f.write(page(o, d, A, active, per_day, out_by[o][d], month_label, site_url, related))
+            f.write(page(o, d, A, active, per_day, out_by[o][d], month_label, site_url, related, days))
         urls.append(f"{site_url}routes/{o}-{d}/")
     # Index of all route pages, so crawlers and people can browse them.
     links = "".join(f"<li><a href='{o}-{d}/'>{A[o]['c']} ({o}) → {A[d]['c']} ({d})</a></li>" for _, o, d, _ in sorted(top, key=lambda x: (x[1], x[2])))
