@@ -68,11 +68,26 @@ function evidence(row, t) {
 }
 const MIN_CONF = 30;
 
+const offC = {};
+function tzOff(code, t) {          // minutes ahead of UTC at noon on date t
+  const tz = AP[code] && AP[code].tz; if (!tz) return null;
+  const k = tz + iso(t); if (k in offC) return offC[k];
+  try {
+    const f = new Intl.DateTimeFormat("en-US", {timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"});
+    const ms = Date.UTC(t.y, t.m - 1, t.d, 12), p = {}; f.formatToParts(new Date(ms)).forEach(x => p[x.type] = x.value);
+    return offC[k] = Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute) - ms) / 60000);
+  } catch (e) { return offC[k] = null; }
+}
 function legOf(row, from, to, t) {
   const ev = evidence(row, t);
-  const dep = mins(row[3]), el = row[5] || 0;
+  const dep = mins(row[3]); let el = row[5] || 0;
   let arr = mins(row[4]); if (arr == null) arr = dep + el;
-  return {c: row[0], fn: row[1], op: row[2], from, to, dep, arr, el, mi: row[6], ot: row[7], cx: row[8], dl: row[9], ev,
+  const o1 = tzOff(from, t), o2 = tzOff(to, t);
+  // absolute (UTC-based) minutes so durations and layovers are right across time zones
+  const aDep = dep - (o1 ?? 0);
+  let aArr = arr - (o2 ?? o1 ?? 0); while (aArr <= aDep) aArr += 1440;
+  if (o1 != null && o2 != null) el = aArr - aDep;
+  return {c: row[0], fn: row[1], op: row[2], from, to, dep, arr, el, aDep, aArr, mi: row[6], ot: row[7], cx: row[8], dl: row[9], ev,
     nextDay: arr < dep};
 }
 
@@ -97,14 +112,21 @@ async function forecast(o, d, t) {
     if (direct && d1 != null && d2 != null && d1 + d2 > direct * 1.75 + 250) continue;
     const L1 = out[h].map(r => legOf(r, o, h, t)).filter(l => l.ev.conf >= MIN_CONF && !l.nextDay);
     const L2 = inn[h].map(r => legOf(r, h, d, t)).filter(l => l.ev.conf >= MIN_CONF);
+    const best = {};               // one itinerary per connecting flight: the tightest comfortable connection
     for (const a of L1) {
-      const opts = L2.filter(b => b.c === a.c && b.dep >= a.arr + 40 && b.dep <= a.arr + 300).sort((x, y) => x.dep - y.dep);
-      const b = opts[0]; if (!b) continue;
-      const lay = b.dep - a.arr;
-      conns.push({c: a.c, legs: [a, b], stops: 1, hub: h, lay, dur: a.el + lay + b.el,
+      const b = L2.filter(b => b.c === a.c && b.aDep >= a.aArr + 40 && b.aDep <= a.aArr + 300).sort((x, y) => x.aDep - y.aDep)[0];
+      if (!b) continue;
+      const lay = b.aDep - a.aArr, key = b.c + b.fn;
+      const cand = {c: a.c, legs: [a, b], stops: 1, hub: h, lay, dur: b.aArr - a.aDep,
         conf: Math.max(MIN_CONF, Math.round(Math.min(a.ev.conf, b.ev.conf) * .95) - (lay < 50 ? 3 : 0)),
-        ot: a.ot != null && b.ot != null ? Math.round(a.ot * b.ot / 100) : null});
+        ot: a.ot != null && b.ot != null ? Math.round(a.ot * b.ot / 100) : null};
+      const cur = best[key];
+      let better = !cur;
+      if (cur) { if (cand.conf > cur.conf + 10) better = true; else if (cur.conf > cand.conf + 10) better = false;
+        else if ((cand.lay >= 50) !== (cur.lay >= 50)) better = cand.lay >= 50; else better = cand.lay < cur.lay; }
+      if (better) best[key] = cand;
     }
+    conns.push(...Object.values(best));
   }
   const bestNon = its.length ? Math.min(...its.map(x => x.dur)) : Infinity;
   conns.sort((a, b) => a.dur - b.dur);
@@ -204,7 +226,7 @@ function renderList() {
   const show = S.showAll ? r : r.slice(0, 10);
   $("#list").innerHTML = show.map(it => {
     const f = it.legs[0], l = it.legs[it.legs.length - 1], id = idOf(it), open = S.open === id, op = it.legs.find(x => x.op);
-    const arrPlus = l.nextDay || (it.stops && (l.arr < f.dep));
+    const lday = d => Math.floor((l.aArr + (tzOff(d, t) ?? 0)) / 1440), arrPlus = lday(d) > 0;
     return `<div class="row"><button aria-expanded="${open}" data-id="${id}">
       <div><div class="tm">${clock(f.dep)} – ${clock(l.arr)}${arrPlus ? `<sup>+1 day</sup>` : ""}</div><div class="who">${al(it.c)} · ${it.legs.map(x => x.c + " " + x.fn).join(", ")}</div></div>
       <div class="path"><div class="ends"><span>${o}</span><span>${d}</span></div><div class="bar">${it.stops ? `<i style="left:${Math.round(f.el / it.dur * 100)}%"></i>` : ""}</div>
