@@ -182,12 +182,15 @@ const MARKER = "799756", PROJECT = "594943";
 const ddmm = t => String(t.d).padStart(2, "0") + String(t.m).padStart(2, "0");
 // Aviasales search link carrying the Contrail partner ID, so bookings earn a commission.
 const gf = (o, d, t, _extra, back) => `https://www.aviasales.com/search/${o}${ddmm(t)}${d}${back ? ddmm(back) : ""}1?marker=${MARKER}`;
+// The price widget reads "YYYY-MM-DD" as midnight UTC and shows it in the viewer's time zone,
+// which lands on the previous day for anyone west of UTC (all of the U.S.). Send the next day there.
+const wdate = t => new Date(Date.UTC(t.y, t.m - 1, t.d, 12)).getTimezoneOffset() > 0 ? iso(addDays(t, 1)) : iso(t);
 function renderPrices() {
   const box = $("#priceBox"); box.innerHTML = "";
   const q = new URLSearchParams({currency: "usd", trs: PROJECT, shmarker: MARKER, powered_by: "true", locale: "en",
-    from_name: S.o, to_name: S.d, departure: iso(S.d1), show_header: "true", limit: "10",
+    from_name: S.o, to_name: S.d, departure: wdate(S.d1), show_header: "true", limit: "10",
     primary_color: "0A0A0A", results_background_color: "FFFFFF", form_background_color: "F4F5F6", campaign_id: "111", promo_id: "4478"});
-  if (S.d2) q.set("return", iso(S.d2));
+  if (S.d2) q.set("return", wdate(S.d2));
   const sc = document.createElement("script"); sc.async = true; sc.charset = "utf-8";
   sc.src = "https://tpscr.com/content?" + q.toString();
   sc.onerror = () => { box.innerHTML = `<div class="empty">Live prices didn't load. <a href="${gf(S.o, S.d, S.d1, "", S.d2)}" target="_blank" rel="noopener">See prices on Aviasales ↗</a></div>`; };
