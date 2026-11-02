@@ -42,6 +42,14 @@ jobs:
       - name: Drop downloads older than 18 months from the cache
         run: find cache -name "*.zip" -mtime +550 -delete || true
 
+      - name: Download site photos (Wikimedia Commons, credited on the page)
+        run: |
+          mkdir -p site/img
+          UA="ContrailSite/1.0 (https://github.com/Dylgas/Contrail)"
+          curl -fsSL -A "$UA" -o site/img/hero.jpg "https://commons.wikimedia.org/wiki/Special:FilePath/C-FGDX_Air_Canada_Boeing_787-9_Dreamliner_(34127944053).jpg?width=1920" || echo "hero photo download failed"
+          curl -fsSL -A "$UA" -o site/img/close.jpg "https://commons.wikimedia.org/wiki/Special:FilePath/Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg?width=1920" || echo "closing photo download failed"
+          ls -la site/img
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

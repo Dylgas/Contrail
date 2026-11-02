@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect width='14' height='14' rx='3' fill='%230a0a0a'/%3E%3Cpath d='M3 11 L11 3 L8.5 11 L7 8 Z' fill='white'/%3E%3C/svg%3E">
 <style>
-/* Layout: black hero with centered headline, search pill and a rounded sky "photo" card; a white sheet with rounded top corners holds the forecast; black closing band */
+/* Layout: black hero with centered headline, search pill and a rounded dusk photo card; a white sheet with rounded top corners holds the forecast; black closing band */
 :root{
   --ink:#0a0a0a; --paper:#ffffff; --mist:#f4f5f6; --hair:#e6e7e9; --hair-dark:rgba(255,255,255,.14);
   --text:#0a0a0a; --soft:#6b6f75; --soft-dark:#a7abb1;
@@ -56,9 +56,16 @@ h1{font-weight:400;font-size:clamp(36px,5.4vw,64px);line-height:1.08;letter-spac
 .swap:hover{background:var(--mist)}
 .search .btn{padding:16px 26px}
 .err{color:#ffb4a8;font-size:14px;margin:14px 0 0}
-.photo{position:relative;margin-top:56px;border-radius:24px;overflow:hidden;aspect-ratio:2.35/1;max-width:100%;background:#9fbfdc}
-.photo canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.photo .cap{position:absolute;left:28px;bottom:24px;text-align:left;color:#fff;text-shadow:0 1px 18px rgba(0,0,0,.25)}
+.photo{position:relative;margin-top:56px;border-radius:24px;overflow:hidden;aspect-ratio:2.35/1;max-width:100%;
+  background:linear-gradient(180deg,#1c2a3d 0%,#3d4a63 45%,#b5775a 85%,#d9a070 100%)}
+.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;display:block}
+.photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 100%);pointer-events:none}
+.photo .cap{position:absolute;z-index:1;left:28px;bottom:24px;text-align:left;color:#fff;text-shadow:0 1px 18px rgba(0,0,0,.3)}
+.credit{position:absolute;z-index:1;right:18px;bottom:14px;font-size:11px;color:rgba(255,255,255,.7);text-decoration:none}
+.credit:hover{color:#fff}
+.close{position:relative;overflow:hidden;border-radius:24px;margin-block:72px 24px;padding-inline:24px;
+  background:#111 center/cover no-repeat}
+.close.has-img{background-image:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.65)),url("img/close.jpg")}
 .photo .cap b{display:block;font-weight:500;font-size:clamp(20px,2.4vw,30px);letter-spacing:-.01em}
 .photo .cap span{font-size:14px;opacity:.9}
 
@@ -155,7 +162,7 @@ td.n{font-variant-numeric:tabular-nums}
 .step p{margin:0;color:var(--soft);font-size:15px}
 
 /* closing */
-.close{text-align:center;padding-block:96px}
+.close{text-align:center;padding-block:110px}
 .close h2{color:#fff}
 .close p{color:#cfcfcf;margin:14px auto 0;max-width:52ch;font-size:18px}
 .close .actions{justify-content:center}
@@ -223,8 +230,9 @@ footer p{margin:0;max-width:70ch}
     </form>
     <p class="err" id="err" hidden></p>
     <div class="datanote" id="dataNote"><i></i><span>Loading flight records…</span></div>
-    <div class="photo"><canvas id="sky" aria-hidden="true"></canvas>
-      <div class="cap"><b id="capBig">&nbsp;</b><span id="capSub"></span></div></div>
+    <div class="photo"><img id="heroImg" src="img/hero.jpg" alt="A jet silhouetted against a dusk sky" onerror="this.remove()">
+      <div class="cap"><b id="capBig">&nbsp;</b><span id="capSub"></span></div>
+      <a class="credit" href="https://commons.wikimedia.org/wiki/File:C-FGDX_Air_Canada_Boeing_787-9_Dreamliner_(34127944053).jpg" target="_blank" rel="noopener">Photo: Liam Allport, CC BY 2.0</a></div>
     <datalist id="aps"></datalist>
   </header>
 </div>
@@ -272,12 +280,12 @@ footer p{margin:0;max-width:70ch}
   </div>
 </main>
 
-<section class="in close">
+<div class="in"><section class="close" id="closeBand">
   <h2>Ready to book?</h2>
   <p>Contrail tells you what's likely to fly. Check prices and book with the airline or a booking site.</p>
   <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a></div>
-</section>
-<div class="in"><footer><span>© 2026 Contrail</span><p>Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
-<script src="app.js?v=3"></script>
+</section></div>
+<div class="in"><footer><span>© 2026 Contrail</span><p>Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
+<script src="app.js?v=4"></script>
 </body>
 </html>

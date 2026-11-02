@@ -292,7 +292,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rad = d => d * Math.PI / 180;
 function canvasOf(id) { const cv = $(id), ctx = cv.getContext("2d"), o = {cv, ctx, W: 0, H: 0};
   new ResizeObserver(() => { const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); o.W = r.width; o.H = r.height; cv.width = r.width * dpr; cv.height = r.height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }).observe(cv); return o; }
-const M = canvasOf("#map"), K = canvasOf("#sky");
+const M = canvasOf("#map");
 let path = [], codes = [], view = {lon0: -126, lon1: -64, lat0: 23, lat1: 51}, t0 = performance.now();
 const pt = c => AP && AP[c] && AP[c].la != null ? {lat: AP[c].la, lon: AP[c].lo} : null;
 function gc(A0, B0, n) { const v = p => [Math.cos(rad(p.lat)) * Math.cos(rad(p.lon)), Math.cos(rad(p.lat)) * Math.sin(rad(p.lon)), Math.sin(rad(p.lat))];
@@ -329,24 +329,7 @@ function drawMap(now) { const {ctx, W, H} = M; if (!W || !AP) return; ctx.clearR
     ctx.font = "500 13px " + getComputedStyle(document.body).fontFamily; const lbl = `${c} · ${city(c)}`, tw = ctx.measureText(lbl).width;
     let lx = px + 14, ly = py + 4; if (lx + tw + 16 > W) lx = px - 14 - tw - 12; ctx.fillStyle = "#fff"; ctx.beginPath(); (ctx.roundRect ? ctx.roundRect(lx - 6, ly - 14, tw + 12, 22, 11) : ctx.rect(lx - 6, ly - 14, tw + 12, 22)); ctx.fill();
     ctx.fillStyle = end ? "#0a0a0a" : "#6b6f75"; ctx.fillText(lbl, lx, ly + 1); }); }
-const seeded = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
-const R = seeded(7), clouds = Array.from({length: 9}, () => ({x: R(), y: .12 + R() * .55, w: .12 + R() * .22, v: .004 + R() * .008, a: .35 + R() * .4}));
-function drawSky(now) { const {ctx, W, H} = K; if (!W) return;
-  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#5d8fc4"); g.addColorStop(.55, "#a8c6e3"); g.addColorStop(.86, "#efdcc6"); g.addColorStop(1, "#e9c9a6"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  const sun = ctx.createRadialGradient(W * .82, H * .9, 0, W * .82, H * .9, H * .9); sun.addColorStop(0, "rgba(255,236,205,.9)"); sun.addColorStop(.35, "rgba(255,228,190,.35)"); sun.addColorStop(1, "rgba(255,228,190,0)"); ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
-  const T = reduce ? 0 : now / 1000;
-  for (const c of clouds) { const x = ((c.x + T * c.v * .15) % 1.3 - .15) * W, y = c.y * H, w = c.w * W;
-    for (let k = 0; k < 4; k++) { const cx = x + (k - 1.5) * w * .28, cy = y + Math.sin(k * 1.7) * w * .05, r = w * (.22 + .06 * Math.cos(k));
-      const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r); rg.addColorStop(0, `rgba(255,255,255,${c.a})`); rg.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); } }
-  const ridge = (base, amp, col, sd) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H); for (let x = 0; x <= W; x += W / 80) { const n = Math.sin(x / W * 7 + sd) * .5 + Math.sin(x / W * 17 + sd * 2) * .3 + Math.sin(x / W * 41 + sd) * .12; ctx.lineTo(x, H * base - n * H * amp); } ctx.lineTo(W, H); ctx.fill(); };
-  ridge(.9, .06, "rgba(150,170,195,.55)", 1.3); ridge(.95, .04, "rgba(118,136,160,.7)", 4.1);
-  const cyc = 18, u = reduce ? .55 : ((T % cyc) / cyc), x = (-.15 + u * 1.35) * W, y = H * (.78 - u * .55), ang = Math.atan2(-.55 * H, 1.35 * W), s = Math.max(1.6, W / 520);
-  const dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx;
-  for (const sg of [-1, 1]) { const ex = x - dx * 17 * s + nx * sg * 4.6 * s, ey = y - dy * 17 * s + ny * sg * 4.6 * s, len = W * .55;
-    const cg = ctx.createLinearGradient(ex, ey, ex - dx * len, ey - dy * len); cg.addColorStop(0, "rgba(255,255,255,0)"); cg.addColorStop(.04, "rgba(255,255,255,.85)"); cg.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.strokeStyle = cg; ctx.lineWidth = 2.2 * s / 1.6; ctx.beginPath(); ctx.moveTo(ex - dx * 6, ey - dy * 6); ctx.lineTo(ex - dx * len, ey - dy * len); ctx.stroke(); }
-  plane(ctx, x, y, ang, s, "#f7f8fa", "#9aa3ad"); }
-function frame(now) { drawMap(now); drawSky(now); requestAnimationFrame(frame); }
+function frame(now) { drawMap(now); requestAnimationFrame(frame); }
 
 /* ---------- boot ---------- */
 async function boot() {
@@ -354,6 +337,7 @@ async function boot() {
   if (!$("#d1").value) $("#d1").value = iso(dep);
   if (!$("#d2").value) $("#d2").value = iso(addDays(dep, 6));
   requestAnimationFrame(frame);
+  { const im = new Image(); im.onload = () => $("#closeBand").classList.add("has-img"); im.src = "img/close.jpg"; }
   try { [META, AP] = await Promise.all([getJSON("meta.json"), getJSON("airports.json")]); }
   catch (e) { $("#dataNote span").textContent = "Flight records are not loaded yet."; $("#list").innerHTML = `<div class="empty">The flight records haven't been built yet. They appear after the monthly data update runs.</div>`; return; }
   $("#dataNote span").textContent = `Real flight records, ${monthName(META.months[0])} – ${monthName(META.months[META.months.length - 1])}`;
