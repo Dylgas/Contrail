@@ -179,6 +179,7 @@ const confWord = c => c >= 85 ? "Very likely" : c >= 65 ? "Likely" : c >= 45 ? "
 const meter = c => { const n = c >= 85 ? 4 : c >= 65 ? 3 : c >= 45 ? 2 : 1; return `<span class="meter" aria-hidden="true">${[0,1,2,3].map(i => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>`; };
 const riskOf = m => m < 55 ? ["Tight connection", "var(--warn)"] : m > 180 ? ["Long wait", "var(--soft)"] : ["Comfortable connection", "var(--good)"];
 const MARKER = "799756", PROJECT = "594943";
+const HELP_ENDPOINT = "";   // Formspree form URL, e.g. https://formspree.io/f/abcdwxyz
 const ddmm = t => String(t.d).padStart(2, "0") + String(t.m).padStart(2, "0");
 // Aviasales search link carrying the Contrail partner ID, so bookings earn a commission.
 const gf = (o, d, t, _extra, back) => `https://www.aviasales.com/search/${o}${ddmm(t)}${d}${back ? ddmm(back) : ""}1?marker=${MARKER}`;
@@ -209,7 +210,7 @@ function renderAll() {
     : r.length ? `No nonstop has flown this route recently. The likely trips connect in ${hubs.slice(0, 2).join(" or ")}.`
     : "No airline in the records flies this trip, even with one stop.";
   $("#results").hidden = false;
-  renderFacts(); renderTabs(); renderChips(); renderList(); renderCal(); renderBest(); renderCompare(); renderPrices(); setRoute();
+  renderFacts(); renderTabs(); renderChips(); renderList(); renderCal(); renderBest(); renderCompare(); renderPrices(); prefillTrip(); setRoute();
   $("#copied").textContent = "";
 }
 
@@ -411,6 +412,28 @@ function drawMap(now) { const {ctx, W, H} = M; if (!W || !AP) return; ctx.clearR
     ctx.fillStyle = end ? "#0a0a0a" : "#6b6f75"; ctx.fillText(lbl, lx, ly + 1); }); }
 function frame(now) { drawMap(now); requestAnimationFrame(frame); }
 
+/* ---------- help form ---------- */
+function setupHelp() {
+  const f = $("#helpForm"), st = $("#hStatus"), btn = $("#hSend");
+  const say = (msg, cls) => { st.textContent = msg; st.className = "hf-status " + (cls || ""); };
+  f.addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#hName").value.trim(), email = $("#hEmail").value.trim(), msg = $("#hMsg").value.trim();
+    if (!name || !email || !msg) return say("Add your name, email and a message.", "bad");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say("That email address doesn't look right. Check it and try again.", "bad");
+    if (/\b(?:\d[ -]?){13,19}\b/.test(msg)) return say("Please remove the card number. We never need it to help you.", "bad");
+    if (!HELP_ENDPOINT) return say("Messages aren't connected yet. Please try again soon.", "bad");
+    btn.disabled = true; say("Sending…");
+    try {
+      const r = await fetch(HELP_ENDPOINT, {method: "POST", headers: {Accept: "application/json"}, body: new FormData(f)});
+      if (!r.ok) throw new Error(r.status);
+      f.reset(); say("Sent. We'll reply to your email soon.", "ok");
+    } catch (err) { say("That didn't send. Check your connection and try again.", "bad"); }
+    finally { btn.disabled = false; }
+  });
+}
+function prefillTrip() { const t = $("#hTrip"); if (t && !t.value && S.o) t.value = `${city(S.o)} (${S.o}) to ${city(S.d)} (${S.d}), ${nice(S.d1)}${S.d2 ? " – " + nice(S.d2) : ""}`; }
+
 /* ---------- boot ---------- */
 async function boot() {
   const t = todayLocal(); let dep = addDays(t, 7); while (wd(dep) !== 4) dep = addDays(dep, 1);
@@ -440,6 +463,7 @@ async function boot() {
     try { await navigator.clipboard.writeText(url); $("#copied").textContent = "Link copied. Anyone with it sees this same search."; }
     catch (e) { $("#copied").textContent = url; }
   };
+  setupHelp();
   window.addEventListener("hashchange", () => { if (fromHash()) { nameHints(); run(); } });
   if (fromHash()) { nameHints(); if (await run()) document.getElementById("forecast").scrollIntoView(); }
 }

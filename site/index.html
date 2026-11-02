@@ -94,6 +94,19 @@ h2{font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.02em;line-h
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
 
 .block{margin-top:96px}
+.helpsplit{align-items:start}
+.helpform{display:flex;flex-direction:column;gap:14px;background:var(--mist);border-radius:20px;padding:24px}
+.hf-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hf{display:flex;flex-direction:column;gap:6px;min-width:0}
+.hf label{font-size:13px;color:var(--soft)}
+.hf input,.hf textarea{font-family:inherit;border:1px solid var(--hair);border-radius:12px;background:#fff;padding:12px 14px;font-size:16px;width:100%;resize:vertical}
+.hf input:focus,.hf textarea:focus{outline:none;border-color:var(--ink)}
+.hf-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hf-status{margin:0;font-size:14px}
+.hf-status.ok{color:var(--good)}.hf-status.bad{color:var(--crit)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+@media (max-width:560px){.hf-row{grid-template-columns:1fr}}
+
 .pricebox{margin-top:28px;background:var(--mist);border-radius:20px;padding:16px;min-height:220px;max-height:880px;overflow:auto;overscroll-behavior:contain}
 .pricebox > *{max-width:100%}
 .disclose{margin:14px 0 0;font-size:13px;color:var(--soft);max-width:80ch}
@@ -262,7 +275,7 @@ footer p{margin:0;max-width:70ch}
 <body>
 <div class="in">
   <nav>
-    <div class="links"><a href="#flights">Flights</a><a href="#prices">Prices</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#how">How it works</a></div>
+    <div class="links"><a href="#flights">Flights</a><a href="#prices">Prices</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#help">Help</a><a href="#how">How it works</a></div>
     <div class="mark">CONTRAIL <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 13 L13 1 L9 13 L7 8 Z" fill="#fff"/></svg></div>
     <div class="right"><a class="btn btn-white btn-sm" href="#top-search">Find a flight</a></div>
   </nav>
@@ -338,6 +351,26 @@ footer p{margin:0;max-width:70ch}
     </section>
 
     </div>
+    <section class="block" id="help">
+      <div class="split helpsplit">
+        <div>
+          <h2>Need help with your trip?</h2>
+          <p class="sub">Ask us anything about flights, timing or booking. A real person reads every message and replies by email, usually within a day or two.</p>
+          <p class="disclose">Never send card numbers, passwords or passport details. We'll never ask for them.</p>
+        </div>
+        <form class="helpform" id="helpForm" novalidate>
+          <div class="hf-row">
+            <div class="hf"><label for="hName">Your name</label><input id="hName" name="name" autocomplete="name" required></div>
+            <div class="hf"><label for="hEmail">Email</label><input id="hEmail" name="email" type="email" autocomplete="email" required></div>
+          </div>
+          <div class="hf"><label for="hTrip">Trip</label><input id="hTrip" name="trip" placeholder="For example, BWI to Orlando, Dec 4–10"></div>
+          <div class="hf"><label for="hMsg">How can we help?</label><textarea id="hMsg" name="message" rows="5" required></textarea></div>
+          <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+          <div class="hf-foot"><button class="btn btn-black" type="submit" id="hSend">Send message</button><p class="hf-status" id="hStatus" role="status"></p></div>
+        </form>
+      </div>
+    </section>
+
     <section class="block" id="how">
       <h2>How the forecast works</h2>
       <p class="sub">Airlines repeat their schedules. Contrail reads what actually flew and assumes the pattern continues.</p>
@@ -357,6 +390,6 @@ footer p{margin:0;max-width:70ch}
   <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="#prices">See live prices</a></div>
 </section></div>
 <div class="in"><footer><span>© 2026 Contrail</span><p>Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
