@@ -160,7 +160,17 @@ async function run() {
   Object.assign(S, {o, d, d1, d2, leg:0, open:null, showAll:false, nonstopOnly:false}); S.filt.clear();
   $("#list").innerHTML = `<div class="loading"><span class="spin"></span>Reading flight records…</div>`;
   S.res = await Promise.all([forecast(o, d, d1), d2 ? forecast(d, o, d2) : Promise.resolve([])]);
-  renderAll(); return true;
+  renderAll();
+  S.hash = `#${o}-${d}-${iso(d1).replace(/-/g, "")}${d2 ? "-" + iso(d2).replace(/-/g, "") : ""}`;
+  try { history.replaceState(null, "", `#${o}-${d}-${iso(d1).replace(/-/g, "")}${d2 ? "-" + iso(d2).replace(/-/g, "") : ""}`); } catch (e) {}
+  return true;
+}
+function fromHash() {
+  const m = /^#([A-Z0-9]{3})-([A-Z0-9]{3})-(\d{8})(?:-(\d{8}))?$/.exec(location.hash || "");
+  if (!m) return false;
+  const f = x => x ? `${x.slice(0,4)}-${x.slice(4,6)}-${x.slice(6)}` : "";
+  $("#from").value = m[1]; $("#to").value = m[2]; $("#d1").value = f(m[3]); $("#d2").value = f(m[4]);
+  return true;
 }
 
 /* ---------- rendering ---------- */
@@ -182,7 +192,8 @@ function renderAll() {
     : "No airline in the records flies this trip, even with one stop.";
   $("#priceLink").href = $("#realLink").href = gf(o, d, S.d1);
   $("#results").hidden = false;
-  renderFacts(); renderTabs(); renderChips(); renderList(); renderWeek(); renderCompare(); setRoute();
+  renderFacts(); renderTabs(); renderChips(); renderList(); renderCal(); renderBest(); renderCompare(); setRoute();
+  $("#copied").textContent = "";
 }
 
 function renderFacts() {
@@ -239,6 +250,7 @@ function renderList() {
   }).join("") + (r.length > 10 && !S.showAll ? `<div class="more"><button class="btn btn-line" id="more">Show all ${r.length} options</button></div>` : "");
   $("#list").querySelectorAll(".row > button").forEach(b => b.onclick = () => { S.open = S.open === b.dataset.id ? null : b.dataset.id; renderList(); setRoute(); });
   const m = $("#more"); if (m) m.onclick = () => { S.showAll = true; renderList(); };
+  $("#list").querySelectorAll("[data-ics]").forEach(b => b.onclick = () => { const it = r.find(x => idOf(x) === b.dataset.ics); if (it) downloadIcs(it, o, d, t); });
 }
 
 function reasons(leg, t) {
@@ -248,6 +260,26 @@ function reasons(leg, t) {
   if (e.kind === "seasonal") r.push("It ran in this season last year but not in recent months, so it may be a seasonal flight.");
   if (e.kind === "new") r.push("It didn't run this time last year but runs now, so it may be a newer flight.");
   return r;
+}
+
+const WINDOW = 331;   // most U.S. airlines open bookings about 331 days ahead
+function saleBox(it, o, d, t) {
+  const open = addDays(t, -WINDOW), live = cmpDate(open, todayLocal()) <= 0, wn = it.c === "WN";
+  if (live) return `<div class="sale"><div><span class="live">On sale now</span><span>Book with ${al(it.c)} or a booking site.</span></div></div>`;
+  return `<div class="sale"><div><b>Goes on sale around ${nice(open)}, ${open.y}</b><span>${wn ? "Southwest opens its schedule in batches, so this date is a rough estimate." : "Airlines usually open bookings about 11 months ahead."}</span></div>
+    <button class="btn btn-black btn-sm" type="button" data-ics="${idOf(it)}">Add reminder to calendar</button></div>`;
+}
+function downloadIcs(it, o, d, t) {
+  const open = addDays(t, -WINDOW), stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const ymd = x => iso(x).replace(/-/g, ""), next = addDays(open, 1), nums = it.legs.map(l => l.c + " " + l.fn).join(" + ");
+  const esc = x => x.replace(/[,;\\]/g, m => "\\" + m);
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Contrail//Flight reminder//EN", "BEGIN:VEVENT",
+    `UID:${idOf(it)}-${ymd(t)}@contrail`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${ymd(open)}`, `DTEND;VALUE=DATE:${ymd(next)}`,
+    `SUMMARY:${esc(`Book ${al(it.c)} ${nums}, ${o} to ${d} on ${nice(t)}`)}`,
+    `DESCRIPTION:${esc(`Bookings for ${nice(t)}, ${t.y} should open around today. Check prices: ${gf(o, d, t, al(it.c))}`)}`,
+    "BEGIN:VALARM", "TRIGGER:PT9H", "ACTION:DISPLAY", "DESCRIPTION:Flight goes on sale", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics], {type: "text/calendar"}));
+  a.download = `contrail-${o}-${d}-${ymd(t)}.ics`; document.body.appendChild(a); a.click(); a.remove();
 }
 
 function detail(it, o, d, t) {
@@ -260,19 +292,42 @@ function detail(it, o, d, t) {
   const stats = it.legs.length === 1 ? it.legs[0] : null;
   const s3 = stats ? `<div class="stat3"><div><b>${stats.ot ?? "—"}%</b><span>Arrived on time</span></div><div><b>${stats.cx}%</b><span>Cancelled</span></div><div><b>${stats.dl ? stats.dl + " min" : "—"}</b><span>Average delay when late</span></div></div>`
     : `<div class="stat3"><div><b>${it.ot ?? "—"}%</b><span>Both legs on time</span></div><div><b>${Math.max(...it.legs.map(l => l.cx))}%</b><span>Worst leg cancelled</span></div><div><b>${it.lay} min</b><span>Time to connect</span></div></div>`;
+  const sale = saleBox(it, o, d, t);
   const why = it.legs.map(l => `<li><b style="font-weight:500">${l.c} ${l.fn}:</b> ${reasons(l, t).join(" ")}</li>`).join("");
   return `<div class="detail"><div class="legs">${legs}</div><div class="why">
-    <h4>Track record over the past year</h4>${s3}
+    ${sale}<h4>Track record over the past year</h4>${s3}
     <h4>Why we predict this</h4><ul>${why}</ul>
     <a class="btn btn-black btn-sm" href="${gf(o, d, t, al(it.c))}" target="_blank" rel="noopener">See prices and book ↗</a></div></div>`;
 }
 
-async function renderWeek() {
-  const base = S.d1, dw = wd(base);
-  $("#week").innerHTML = "";
-  const counts = await Promise.all(DOWS.map((_, i) => forecast(S.o, S.d, addDays(base, (i - dw + 7) % 7)).then(r => r.length)));
-  const mx = Math.max(1, ...counts);
-  $("#week").innerHTML = counts.map((c, i) => `<div class="${i === dw ? "on" : ""}"><strong>${c}</strong><span class="b" style="height:${Math.round(c / mx * 78)}%"></span><em>${DOWS[i]}</em></div>`).join("");
+async function renderCal() {
+  const t = S.d1, first = {y: t.y, m: t.m, d: 1}, days = new Date(Date.UTC(t.y, t.m, 0)).getUTCDate(), today = todayLocal();
+  $("#calTitle").textContent = `${MONL[t.m - 1]} ${t.y}`;
+  // Predictions depend on the weekday and month, so one forecast per weekday covers the month.
+  const counts = await Promise.all(DOWS.map((_, w) => { let x = first; while (wd(x) !== w) x = addDays(x, 1); return forecast(S.o, S.d, x).then(r => r.length); }));
+  const mx = Math.max(1, ...counts), lvl = c => !c ? "" : c >= mx * .85 ? "l4" : c >= mx * .6 ? "l3" : c >= mx * .3 ? "l2" : "l1";
+  let h = DOWS.map(x => `<div class="h">${x.slice(0, 2)}</div>`).join("") + "<div></div>".repeat(wd(first));
+  for (let d = 1; d <= days; d++) { const x = {y: t.y, m: t.m, d}, c = counts[wd(x)], past = cmpDate(x, today) < 0;
+    h += `<button type="button" class="${lvl(c)}${d === t.d ? " sel" : ""}" data-d="${iso(x)}" ${past ? "disabled" : ""} aria-label="${nice(x)}: ${c} likely options"><b>${d}</b><span>${c}</span></button>`; }
+  $("#cal").innerHTML = h;
+  $("#cal").querySelectorAll("button").forEach(b => b.onclick = async () => {
+    const nd = parseDate(b.dataset.d), gap = S.d2 ? Math.round((Date.UTC(S.d2.y, S.d2.m - 1, S.d2.d) - Date.UTC(S.d1.y, S.d1.m - 1, S.d1.d)) / 864e5) : null;
+    $("#d1").value = b.dataset.d; if (gap != null) $("#d2").value = iso(addDays(nd, gap));
+    if (await run()) document.getElementById("flights").scrollIntoView({behavior: reduce ? "auto" : "smooth"});
+  });
+}
+
+function renderBest() {
+  const r = S.res[0], B = [["Morning", "Before noon", 0, 720], ["Afternoon", "Noon to 5 PM", 720, 1020], ["Evening", "After 5 PM", 1020, 1440]];
+  const rows = B.map(([n, sub, lo, hi]) => { const xs = r.filter(x => x.ot != null && x.legs[0].dep >= lo && x.legs[0].dep < hi);
+    return {n, sub, k: xs.length, ot: xs.length ? Math.round(xs.reduce((a, x) => a + x.ot, 0) / xs.length) : null}; });
+  const have = rows.filter(x => x.ot != null), best = have.length ? have.reduce((a, b) => b.ot > a.ot ? b : a) : null;
+  $("#tod").innerHTML = rows.map(x => `<div class="r${best && x === best && have.length > 1 ? " best" : ""}"><div>${x.n}<br><span>${x.sub}</span></div>
+    <div class="track"><i style="width:${x.ot ?? 0}%"></i></div><b>${x.ot != null ? x.ot + "%" : "—"}</b></div>`).join("");
+  const top = r.filter(x => x.ot != null).sort((a, b) => b.ot - a.ot || b.conf - a.conf)[0];
+  $("#tip").innerHTML = !have.length ? "Not enough history on this route to compare times of day."
+    : (have.length > 1 ? `<b style="font-weight:500">${best.n} flights</b> have the best record on this route. ` : "") +
+      (top ? `The most reliable option is ${top.legs.map(l => l.c + " " + l.fn).join(" + ")} at ${clock(top.legs[0].dep)}, on time ${top.ot}% of the time.` : "");
 }
 
 function renderCompare() {
@@ -356,6 +411,13 @@ async function boot() {
     if (await run()) document.getElementById("forecast").scrollIntoView({behavior: reduce ? "auto" : "smooth"});
   });
   if (!POP.length) $("#popular").hidden = true;
+  $("#share").onclick = async () => {
+    const url = location.href.split("#")[0] + (S.hash || "");
+    try { await navigator.clipboard.writeText(url); $("#copied").textContent = "Link copied. Anyone with it sees this same search."; }
+    catch (e) { $("#copied").textContent = url; }
+  };
+  window.addEventListener("hashchange", () => { if (fromHash()) { nameHints(); run(); } });
+  if (fromHash()) { nameHints(); if (await run()) document.getElementById("forecast").scrollIntoView(); }
 }
 boot();
 })();

@@ -84,6 +84,33 @@ h2{font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.02em;line-h
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
 
 .block{margin-top:96px}
+.copied{margin:10px 0 0;font-size:14px;color:var(--good);min-height:1.5em}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .h{font-size:12px;color:var(--soft);text-align:center;padding-bottom:2px}
+.cal button{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1/1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-variant-numeric:tabular-nums;background:#fff;border:1px solid transparent}
+.cal button b{font-weight:500;font-size:15px}
+.cal button span{font-size:11px;color:var(--soft)}
+.cal button.l1{background:#e4e7ea}.cal button.l2{background:#cfd4d9}.cal button.l3{background:#9aa2ab;color:#fff}.cal button.l3 span{color:#eef0f2}
+.cal button.l4{background:#0a0a0a;color:#fff}.cal button.l4 span{color:#c9cdd2}
+.cal button.sel{outline:2px solid var(--ink);outline-offset:2px}
+.cal button:disabled{cursor:default;opacity:.35}
+.cal button:not(:disabled):hover{transform:translateY(-1px)}
+.cal button:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.tod{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.tod .r{display:grid;grid-template-columns:110px minmax(0,1fr) 60px;gap:12px;align-items:center;font-size:15px}
+.tod .r span{color:var(--soft);font-size:13px}
+.tod .track{height:10px;border-radius:5px;background:#dfe2e5;overflow:hidden}
+.tod .track i{display:block;height:100%;border-radius:5px;background:#9aa2ab}
+.tod .r.best .track i{background:var(--ink)}
+.tod .r b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.tip{margin:20px 0 0;font-size:15px;color:var(--text)}
+.sale{margin:0 0 18px;padding:14px 16px;border-radius:14px;background:var(--mist);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.sale b{font-weight:500;display:block}
+.sale span{font-size:13px;color:var(--soft)}
+.sale .live{display:inline-flex;align-items:center;gap:6px;color:var(--good);font-weight:500}
+.sale .live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--good)}
+.why-actions{display:flex;gap:10px;flex-wrap:wrap}
+
 .routes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:28px}
 .route{all:unset;box-sizing:border-box;cursor:pointer;background:var(--mist);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;gap:6px;transition:background .2s,transform .2s}
 .route:hover{background:#eceef0;transform:translateY(-2px)}
@@ -221,7 +248,7 @@ footer p{margin:0;max-width:70ch}
 <body>
 <div class="in">
   <nav>
-    <div class="links"><a href="#flights">Flights</a><a href="#compare">Airlines</a><a href="#how">How it works</a></div>
+    <div class="links"><a href="#flights">Flights</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#how">How it works</a></div>
     <div class="mark">CONTRAIL <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 13 L13 1 L9 13 L7 8 Z" fill="#fff"/></svg></div>
     <div class="right"><a class="btn btn-white btn-sm" href="#top-search">Find a flight</a></div>
   </nav>
@@ -259,7 +286,8 @@ footer p{margin:0;max-width:70ch}
         <h2 id="rtTitle">&nbsp;</h2>
         <p class="sub" id="rtSub"></p>
         <ul class="facts" id="facts"></ul>
-        <div class="actions"><a class="btn btn-black" href="#flights">See predicted flights</a><a class="btn btn-line" id="priceLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a></div>
+        <div class="actions"><a class="btn btn-black" href="#flights">See predicted flights</a><a class="btn btn-line" id="priceLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a><button class="btn btn-line" id="share" type="button">Copy link to this search</button></div>
+        <p class="copied" id="copied" role="status"></p>
       </div>
       <div class="mapcard"><canvas id="map" aria-hidden="true"></canvas></div>
     </section>
@@ -273,13 +301,19 @@ footer p{margin:0;max-width:70ch}
       <div class="rows" id="list"><div class="loading"><span class="spin"></span>Loading flight records…</div></div>
     </section>
 
+    <section class="block" id="when">
+      <h2>When to fly</h2>
+      <p class="sub">Pick a better day or time from what's flown on this route.</p>
+      <div class="two">
+        <div class="panel"><h3 id="calTitle">Calendar</h3><p>Likely flights each day. Tap a day to see its flights.</p><div class="cal" id="cal"></div></div>
+        <div class="panel"><h3>Best time of day</h3><p id="bestSub">How often flights arrived on time, by departure time.</p><div class="tod" id="tod"></div><p class="tip" id="tip"></p></div>
+      </div>
+    </section>
+
     <section class="block" id="compare">
       <h2>Compare airlines</h2>
       <p class="sub">Who flies this trip, how they route it, and how often their flights arrive on time.</p>
-      <div class="two">
-        <div class="panel"><h3>Airlines on this route</h3><p id="cmpSub"></p><div class="tablewrap"><table id="cmp"></table></div></div>
-        <div class="panel"><h3>Options by day of week</h3><p>Predicted flights each day, same route.</p><div class="week" id="week"></div></div>
-      </div>
+      <div class="panel" style="margin-top:36px"><h3>Airlines on this route</h3><p id="cmpSub"></p><div class="tablewrap"><table id="cmp"></table></div></div>
     </section>
 
     </div>
@@ -302,6 +336,6 @@ footer p{margin:0;max-width:70ch}
   <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">See prices ↗</a></div>
 </section></div>
 <div class="in"><footer><span>© 2026 Contrail</span><p>Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

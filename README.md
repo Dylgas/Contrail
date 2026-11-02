@@ -14,6 +14,14 @@ Once a month, a GitHub Action:
 
 The site predicts a flight on a future date when it flew on that weekday in the same month last year and is still flying in the latest months. Connections are built from two predicted flights on the same airline with 40 minutes to 5 hours between them.
 
+## Features
+
+- Predicted nonstop and one-stop flights with real flight numbers, times and operating airlines.
+- Each flight's on-time rate, cancellation rate and average delay.
+- A month calendar of likely flights per day and the best time of day to fly.
+- On-sale dates, with a calendar reminder for trips more than about 11 months away.
+- Shareable links, such as `#BWI-MCO-20261204`.
+
 ## Limits
 
 - U.S. domestic flights by major airlines and their regional partners only.
