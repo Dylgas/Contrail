@@ -267,7 +267,14 @@ function saleBox(it, o, d, t) {
   const open = addDays(t, -WINDOW), live = cmpDate(open, todayLocal()) <= 0, wn = it.c === "WN";
   if (live) return `<div class="sale"><div><span class="live">On sale now</span><span>Book with ${al(it.c)} or a booking site.</span></div></div>`;
   return `<div class="sale"><div><b>Goes on sale around ${nice(open)}, ${open.y}</b><span>${wn ? "Southwest opens its schedule in batches, so this date is a rough estimate." : "Airlines usually open bookings about 11 months ahead."}</span></div>
-    <button class="btn btn-black btn-sm" type="button" data-ics="${idOf(it)}">Add reminder to calendar</button></div>`;
+    <div class="why-actions"><a class="btn btn-black btn-sm" href="${gcal(it, o, d, t)}" target="_blank" rel="noopener">Remind me in Google Calendar</a>
+    <button class="btn btn-line btn-sm" type="button" data-ics="${idOf(it)}">Apple or Outlook calendar</button></div></div>`;
+}
+function gcal(it, o, d, t) {
+  const open = addDays(t, -WINDOW), ymd = x => iso(x).replace(/-/g, ""), nums = it.legs.map(l => l.c + " " + l.fn).join(" + ");
+  const q = new URLSearchParams({action: "TEMPLATE", text: `Book ${al(it.c)} ${nums}, ${o} to ${d} on ${nice(t)}`,
+    dates: `${ymd(open)}/${ymd(addDays(open, 1))}`, details: `Bookings for ${nice(t)}, ${t.y} should open around today. Check prices: ${gf(o, d, t, al(it.c))}`});
+  return "https://calendar.google.com/calendar/render?" + q.toString();
 }
 function downloadIcs(it, o, d, t) {
   const open = addDays(t, -WINDOW), stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
