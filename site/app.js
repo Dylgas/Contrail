@@ -100,14 +100,17 @@ function dist(a, b) { const A = AP[a], B = AP[b]; if (!A || !B || A.la == null |
 // so one timetable slot counts as one flight, shown under its most recent flight number.
 function mergeSlots(rows) {
   const n = META.months.length * 7, groups = [];
-  const recent = r => { let x = 0; for (let i = r[10].length - 21; i < r[10].length; i++) x += +r[10][i] || 0; return x; };
-  for (const r of rows.slice().sort((a, b) => mins(a[3]) - mins(b[3]))) {
-    const g = groups.find(g => g.c === r[0] && Math.abs(mins(g.dep) - mins(r[3])) <= 10);
-    if (g) g.rows.push(r); else groups.push({c: r[0], dep: r[3], rows: [r]});
+  const lastActive = r => { for (let i = r[10].length - 1; i >= 0; i--) if (+r[10][i]) return i; return -1; };
+  const sorted = rows.slice().sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : mins(a[3]) - mins(b[3]));
+  for (const r of sorted) {
+    // Chain slots whose times drift a little month to month (Southwest moves times 5-15 minutes at a time).
+    const g = groups.length && groups[groups.length - 1];
+    if (g && g.c === r[0] && mins(r[3]) - g.last <= 15) { g.rows.push(r); g.last = mins(r[3]); }
+    else groups.push({c: r[0], last: mins(r[3]), rows: [r]});
   }
   return groups.map(g => {
     if (g.rows.length === 1) return g.rows[0];
-    const lead = g.rows.reduce((a, b) => recent(b) > recent(a) ? b : a);
+    const lead = g.rows.reduce((a, b) => lastActive(b) > lastActive(a) || (lastActive(b) === lastActive(a) && b[10] > a[10]) ? b : a);
     let grid = ""; for (let i = 0; i < n; i++) grid += Math.min(9, g.rows.reduce((s, r) => s + (+r[10][i] || 0), 0));
     return [...lead.slice(0, 10), grid];
   });
