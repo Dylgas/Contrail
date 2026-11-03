@@ -71,3 +71,14 @@ python pipeline/build.py --out site/data --local /tmp/fx
 - Airport locations: [OpenFlights](https://openflights.org/data.html), Open Database License.
 
 Built by Echo Vance.
+
+## AI receptionist → Call requests
+
+Calls answered by My AI Front Desk show up in the staff site's **Call requests** (source "AI receptionist").
+
+- Receiver: `supabase/functions/ai-receptionist/index.ts`, deployed as a Supabase Edge Function with JWT verification off.
+- It only accepts requests whose address carries the secret `?key=` stored in `public.webhook_keys`. To get the full address, run this in the SQL editor:
+  `select 'https://<project>.supabase.co/functions/v1/ai-receptionist?key=' || key from public.webhook_keys;`
+- Paste that address into My AI Front Desk → Post-Call Webhook. Opening it in a browser should say "Connected."
+- Each call's name, number, email, summary and other collected answers are mapped automatically, and the full payload is kept in `call_requests.raw`.
+- To change the secret: `update public.webhook_keys set key = default where name = 'ai-receptionist';` then paste the new address.

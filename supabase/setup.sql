@@ -48,6 +48,8 @@ create table if not exists public.call_requests (
   notes text,
   updated_at timestamptz not null default now()
 );
+alter table public.call_requests add column if not exists external_id text unique;  -- call id from the AI receptionist
+alter table public.call_requests add column if not exists raw jsonb;                 -- everything the receptionist sent
 create index if not exists call_requests_created on public.call_requests (created_at desc);
 
 create or replace function public.touch_updated_at() returns trigger language plpgsql as $$
@@ -78,7 +80,17 @@ create table if not exists public.events (
   created_at timestamptz not null default now()
 );
 
+-- ---------- Secret for the AI receptionist webhook (only the server can read it) ----------
+create table if not exists public.webhook_keys (
+  name text primary key,
+  key text not null default replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', ''),
+  created_at timestamptz not null default now()
+);
+insert into public.webhook_keys (name) values ('ai-receptionist') on conflict (name) do nothing;
+
 -- ---------- Security rules ----------
+alter table public.webhook_keys enable row level security;
+revoke all on public.webhook_keys from anon, authenticated;
 alter table public.profiles enable row level security;
 alter table public.call_requests enable row level security;
 alter table public.bookings enable row level security;
@@ -94,7 +106,8 @@ drop policy if exists "admin manages profiles" on public.profiles;
 -- The public website may only add a brand-new request. It can never read, change or delete one.
 drop policy if exists "website adds requests" on public.call_requests;
 create policy "website adds requests" on public.call_requests for insert to anon
-  with check (source = 'Website form' and status = 'New' and call_at is null and assigned_to is null and notes is null);
+  with check (source = 'Website form' and status = 'New' and call_at is null and assigned_to is null and notes is null
+              and external_id is null and raw is null);
 drop policy if exists "staff read requests" on public.call_requests;
 create policy "staff read requests" on public.call_requests for select to authenticated using (public.is_staff());
 drop policy if exists "staff add requests" on public.call_requests;
@@ -128,6 +141,10 @@ do $$ begin
   begin alter publication supabase_realtime add table public.call_requests; exception when others then null; end;
   begin alter publication supabase_realtime add table public.events; exception when others then null; end;
 end $$;
+
+-- Your AI receptionist webhook address (paste it into My AI Front Desk -> Post-Call Webhook):
+-- select 'https://<project>.supabase.co/functions/v1/ai-receptionist?key=' || key as webhook from public.webhook_keys;
+-- To change the secret: update public.webhook_keys set key = default where name = 'ai-receptionist';
 
 -- After creating your own login, make yourself the admin (put your email in):
 -- update public.profiles set role = 'admin' where email = 'you@example.com';
