@@ -122,7 +122,18 @@ Deno.serve(async (req) => {
 
   let payload: unknown;
   try { payload = await readBody(req); } catch { return reply({ error: "Couldn't read the call details." }, 400); }
-  const row = toRequest(payload);
+  // Retell AI sends call_started, call_ended and call_analyzed. Only the last one has the summary, so file that one.
+  const p = payload as Record<string, any>;
+  let row;
+  if (p && typeof p.event === "string" && p.call && typeof p.call === "object") {
+    if (p.event !== "call_analyzed") return reply({ ok: true, ignored: p.event });
+    const c = p.call, a = c.call_analysis || {};
+    row = toRequest({ call_id: c.call_id, from_number: c.from_number, summary: a.call_summary, ...(a.custom_analysis_data || {}) });
+    const { transcript_object, transcript_with_tool_calls, ...keep } = c;
+    row.raw = { event: p.event, call: keep };
+  } else {
+    row = toRequest(payload);
+  }
   const q = row.external_id
     ? db.from("call_requests").upsert(row, { onConflict: "external_id", ignoreDuplicates: true })
     : db.from("call_requests").insert(row);
