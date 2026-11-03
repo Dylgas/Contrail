@@ -87,8 +87,12 @@ let cachedKey: string | null = null;
 async function keyOk(k: string) {
   if (!k) return false;
   if (!cachedKey) {
-    const { data } = await db.from("webhook_keys").select("key").eq("name", "ai-receptionist").maybeSingle();
+    const { data, error } = await db.from("webhook_keys").select("key").eq("name", "ai-receptionist").maybeSingle();
+    if (error || !data) console.error("Key lookup failed:", error?.message ?? "no row", "| service key set:", !!(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY")));
     cachedKey = data?.key ?? null;
+  }
+  if (cachedKey && k.length !== cachedKey.length) console.error(`Key length mismatch: got ${k.length}, expected ${cachedKey.length}`);
+  {
   }
   if (!cachedKey || k.length !== cachedKey.length) return false;
   let d = 0;
