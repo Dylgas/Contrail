@@ -23,7 +23,18 @@ The site predicts a flight on a future date when it flew on that weekday in the 
 - Shareable links, such as `#BWI-MCO-20261204`.
 - Live prices from Kiwi.com and partner links through Travelpayouts (partner ID 799756).
 - Route pages for the 400 busiest routes at `/routes/`, plus `sitemap.xml`, rebuilt monthly.
-- A trip help form (Formspree), and Privacy and Terms pages.
+- A "Request a call back" form that saves to the staff database, and Privacy and Terms pages.
+
+## Staff site
+
+`/staff/` is a sign-in site for Contrail staff: call requests, a shared calendar, bookings and the team list. It runs on Supabase (free plan).
+
+1. Create a Supabase project. In **SQL Editor**, run `supabase/setup.sql`.
+2. In **Authentication → Sign In / Providers**, turn off **Allow new users to sign up**, so only invited people get in.
+3. In **Authentication → URL Configuration**, set the Site URL to `https://dylgas.github.io/Contrail/staff/`.
+4. Put the Project URL and the `anon` public key in `site/config.js`.
+5. Invite staff in **Authentication → Users → Add user → Send invitation**. Make the owner an admin with the line at the end of `setup.sql`.
+6. For the daily bookings sync, add repository secrets `TRAVELPAYOUTS_TOKEN`, `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (the `service_role` key; never put it in the site).
 
 ## Limits
 

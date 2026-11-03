@@ -285,7 +285,7 @@ footer p{margin:0;max-width:70ch}
 <body>
 <div class="in">
   <nav>
-    <div class="links"><a href="#flights">Flights</a><a href="#prices">Prices</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#help">Help</a><a href="#how">How it works</a></div>
+    <div class="links"><a href="#flights">Flights</a><a href="#prices">Prices</a><a href="#when">When to fly</a><a href="#compare">Airlines</a><a href="#help">Get help</a><a href="#how">How it works</a></div>
     <div class="mark">CONTRAIL <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 13 L13 1 L9 13 L7 8 Z" fill="#fff"/></svg></div>
     <div class="right"><a class="btn btn-white btn-sm" href="#top-search">Find a flight</a></div>
   </nav>
@@ -364,19 +364,23 @@ footer p{margin:0;max-width:70ch}
     <section class="block" id="help">
       <div class="split helpsplit">
         <div>
-          <h2>Need help with your trip?</h2>
-          <p class="sub">Ask us anything about flights, timing or booking. A real person reads every message and replies by email, usually within a day or two.</p>
-          <p class="disclose">Never send card numbers, passwords or passport details. We'll never ask for them.</p>
+          <h2>Want help booking?</h2>
+          <p class="sub">Leave your number and a real person from Contrail will call you back to help find the right flight. You book and pay the airline or Kiwi.com directly.</p>
+          <p class="disclose">Never share card numbers, passwords or passport details with us. We'll never ask for them.</p>
         </div>
         <form class="helpform" id="helpForm" novalidate>
           <div class="hf-row">
-            <div class="hf"><label for="hName">Your name</label><input id="hName" name="name" autocomplete="name" required></div>
-            <div class="hf"><label for="hEmail">Email</label><input id="hEmail" name="email" type="email" autocomplete="email" required></div>
+            <div class="hf"><label for="hName">Your name</label><input id="hName" name="name" autocomplete="name" maxlength="120" required></div>
+            <div class="hf"><label for="hPhone">Phone</label><input id="hPhone" name="phone" type="tel" autocomplete="tel" maxlength="30" required></div>
           </div>
-          <div class="hf"><label for="hTrip">Trip</label><input id="hTrip" name="trip" placeholder="For example, BWI to Orlando, Dec 4–10"></div>
-          <div class="hf"><label for="hMsg">How can we help?</label><textarea id="hMsg" name="message" rows="5" required></textarea></div>
+          <div class="hf-row">
+            <div class="hf"><label for="hEmail">Email (optional)</label><input id="hEmail" name="email" type="email" autocomplete="email" maxlength="200"></div>
+            <div class="hf"><label for="hBest">Best time to call</label><input id="hBest" name="best_time" maxlength="120" placeholder="For example, weekdays after 5 PM"></div>
+          </div>
+          <div class="hf"><label for="hTrip">Trip</label><input id="hTrip" name="trip" maxlength="300" placeholder="For example, BWI to Orlando, Dec 4–10"></div>
+          <div class="hf"><label for="hMsg">Anything else? (optional)</label><textarea id="hMsg" name="message" rows="3" maxlength="2000"></textarea></div>
           <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
-          <div class="hf-foot"><button class="btn btn-black" type="submit" id="hSend">Send message</button><p class="hf-status" id="hStatus" role="status"></p></div>
+          <div class="hf-foot"><button class="btn btn-black" type="submit" id="hSend">Request a call back</button><p class="hf-status" id="hStatus" role="status"></p></div>
         </form>
       </div>
     </section>
@@ -403,6 +407,7 @@ footer p{margin:0;max-width:70ch}
 </section></div>
 <div class="in"><footer><span>© 2026 Contrail</span><p><a href="privacy.html" style="color:inherit">Privacy</a> · <a href="terms.html" style="color:inherit">Terms</a> · <a href="routes/" style="color:inherit">Routes</a>. Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
 <div class="pbar" id="pbar" hidden><span id="pbarText"></span><a class="btn btn-white btn-sm" href="#prices">See live prices</a></div>
-<script src="app.js?v=15"></script>
+<script src="config.js?v=1"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

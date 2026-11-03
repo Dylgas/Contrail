@@ -212,7 +212,6 @@ const confWord = c => c >= 85 ? "Very likely" : c >= 65 ? "Likely" : c >= 45 ? "
 const meter = c => { const n = c >= 85 ? 4 : c >= 65 ? 3 : c >= 45 ? 2 : 1; return `<span class="meter" aria-hidden="true">${[0,1,2,3].map(i => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>`; };
 const riskOf = m => m < 55 ? ["Tight connection", "var(--warn)"] : m > 180 ? ["Long wait", "var(--soft)"] : ["Comfortable connection", "var(--good)"];
 const MARKER = "799756", PROJECT = "594943";
-const HELP_ENDPOINT = "";   // Formspree form URL, e.g. https://formspree.io/f/abcdwxyz
 const ddmm = t => String(t.d).padStart(2, "0") + String(t.m).padStart(2, "0");
 // Aviasales search link carrying the Contrail partner ID, so bookings earn a commission.
 const gf = (o, d, t, _extra, back) => `https://www.aviasales.com/search/${o}${ddmm(t)}${d}${back ? ddmm(back) : ""}1?marker=${MARKER}`;
@@ -448,20 +447,25 @@ function frame(now) { drawMap(now); requestAnimationFrame(frame); }
 
 /* ---------- help form ---------- */
 function setupHelp() {
-  const f = $("#helpForm"), st = $("#hStatus"), btn = $("#hSend");
+  const f = $("#helpForm"), st = $("#hStatus"), btn = $("#hSend"), CFG = window.CONTRAIL_CONFIG || {};
   const say = (msg, cls) => { st.textContent = msg; st.className = "hf-status " + (cls || ""); };
   f.addEventListener("submit", async e => {
     e.preventDefault();
-    const name = $("#hName").value.trim(), email = $("#hEmail").value.trim(), msg = $("#hMsg").value.trim();
-    if (!name || !email || !msg) return say("Add your name, email and a message.", "bad");
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say("That email address doesn't look right. Check it and try again.", "bad");
-    if (/\b(?:\d[ -]?){13,19}\b/.test(msg)) return say("Please remove the card number. We never need it to help you.", "bad");
-    if (!HELP_ENDPOINT) return say("Messages aren't connected yet. Please try again soon.", "bad");
+    if (f.elements._gotcha.value) return say("Thanks. We'll call you soon.", "ok");          // bots fill the hidden field
+    const v = id => $("#" + id).value.trim();
+    const name = v("hName"), phone = v("hPhone"), email = v("hEmail"), msg = v("hMsg");
+    if (!name || !phone) return say("Add your name and phone number.", "bad");
+    if (phone.replace(/\D/g, "").length < 10) return say("That phone number looks too short. Include the area code.", "bad");
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say("That email address doesn't look right. Check it or leave it blank.", "bad");
+    if (/\b(?:\d[ -]?){13,19}\b/.test(msg + " " + v("hTrip"))) return say("Please remove the card number. We never need it to help you.", "bad");
+    if (!CFG.supabaseUrl || !CFG.supabaseAnonKey) return say("Call-back requests aren't connected yet. Please try again soon.", "bad");
     btn.disabled = true; say("Sending…");
     try {
-      const r = await fetch(HELP_ENDPOINT, {method: "POST", headers: {Accept: "application/json"}, body: new FormData(f)});
+      const r = await fetch(CFG.supabaseUrl.replace(/\/$/, "") + "/rest/v1/call_requests", {method: "POST",
+        headers: {apikey: CFG.supabaseAnonKey, Authorization: "Bearer " + CFG.supabaseAnonKey, "Content-Type": "application/json", Prefer: "return=minimal"},
+        body: JSON.stringify({name, phone, email: email || null, trip: v("hTrip") || null, best_time: v("hBest") || null, message: msg || null})});
       if (!r.ok) throw new Error(r.status);
-      f.reset(); say("Sent. We'll reply to your email soon.", "ok");
+      f.reset(); say("Got it. Someone from Contrail will call you soon.", "ok");
     } catch (err) { say("That didn't send. Check your connection and try again.", "bad"); }
     finally { btn.disabled = false; }
   });

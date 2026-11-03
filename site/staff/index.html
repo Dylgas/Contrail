@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Contrail Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect width='14' height='14' rx='3' fill='%230a0a0a'/%3E%3Cpath d='M3 11 L11 3 L8.5 11 L7 8 Z' fill='white'/%3E%3C/svg%3E">
+<style>
+/* Layout: black top bar with tabs; white working sheet with rounded top corners; cards only for the few things that are separate objects */
+:root{
+  --ink:#0a0a0a; --paper:#ffffff; --mist:#f4f5f6; --hair:#e6e7e9; --soft:#6b6f75;
+  --good:#1f7a4d; --warn:#a46a00; --crit:#b23a2a; --blue:#2b5cb8;
+  --f:"Inter Tight","Inter","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--ink)}
+body{margin:0;background:var(--ink);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+[hidden]{display:none!important}
+.in{max-width:1240px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+
+/* top bar */
+.top{color:#fff}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
+.mark{font-weight:500;letter-spacing:.14em;font-size:16px;display:flex;align-items:center;gap:8px}
+.mark small{letter-spacing:.04em;font-weight:400;color:#a7abb1;font-size:13px;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:2px 10px}
+.who{display:flex;align-items:center;gap:12px;font-size:14px;color:#d6d8db}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:14px}
+.tab{background:transparent;border:0;color:#a7abb1;padding:9px 16px;border-radius:999px;cursor:pointer;white-space:nowrap;font-size:15px}
+.tab[aria-selected="true"]{background:#fff;color:var(--ink)}
+.tab .badge{display:inline-block;min-width:20px;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--warn);color:#fff;font-size:12px;line-height:20px;text-align:center}
+
+.sheet{background:var(--paper);border-radius:24px 24px 0 0;min-height:70vh}
+.sheet > .in{padding-block:40px 80px}
+h1{font-weight:400;font-size:clamp(28px,3.4vw,40px);letter-spacing:-.02em;line-height:1.1;margin:0}
+h2{font-weight:500;font-size:19px;letter-spacing:-.01em;margin:0}
+.sub{color:var(--soft);margin:6px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;white-space:nowrap;text-decoration:none}
+.btn-black{background:var(--ink);color:#fff}
+.btn-line{background:#fff;color:var(--ink);border-color:var(--hair)}
+.btn-line:hover{border-color:var(--ink)}
+.btn-white{background:#fff;color:var(--ink)}
+.btn-ghost-w{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.btn[disabled]{opacity:.5;cursor:default}
+.link{background:none;border:0;padding:0;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+/* sign in */
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px max(20px,env(safe-area-inset-left,0px))}
+.auth-card{width:min(100%,420px);background:#fff;border-radius:24px;padding:36px}
+.auth-card .mark{color:var(--ink);margin-bottom:28px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:16px;min-width:0}
+.field label{font-size:13px;color:var(--soft)}
+.field input,.field select,.field textarea{border:1px solid var(--hair);border-radius:12px;background:#fff;padding:11px 13px;font-size:15px;width:100%}
+.field textarea{resize:vertical;min-height:90px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--ink)}
+.msg{margin:14px 0 0;font-size:14px}
+.msg.bad{color:var(--crit)}.msg.ok{color:var(--good)}
+.auth-card .btn{width:100%;margin-top:22px;padding:13px}
+.auth-foot{margin-top:18px;font-size:13px;color:var(--soft);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* overview */
+.head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.figs{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 28px}
+.figs li{border-top:1px solid var(--ink);padding-top:14px}
+.figs b{display:block;font-weight:400;font-size:38px;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.figs span{color:var(--soft);font-size:14px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;margin-top:48px}
+.cols > *{min-width:0}
+.list{list-style:none;margin:14px 0 0;padding:0;border-top:1px solid var(--hair)}
+.list li{border-bottom:1px solid var(--hair)}
+.list button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;padding:14px 4px}
+.list button:hover{background:var(--mist)}
+.list button:focus-visible{outline:2px solid #3b82f6;outline-offset:-2px}
+.list .t{font-weight:500}
+.list .s{color:var(--soft);font-size:14px;grid-column:1}
+.list .r{grid-row:1 / span 2;grid-column:2;align-self:center;text-align:right;font-size:13px;color:var(--soft)}
+.empty{color:var(--soft);padding:18px 4px;margin:0}
+
+/* pills */
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:2px 10px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.st-New{color:var(--warn)}.st-Scheduled{color:var(--blue)}.st-Called{color:var(--ink)}.st-Booked{color:var(--good)}.st-No.answer,.st-Noanswer{color:var(--soft)}.st-Closed{color:var(--soft)}
+
+/* calls */
+.tools{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:26px 0 12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--hair);background:#fff;border-radius:999px;padding:6px 13px;font-size:13px;cursor:pointer;color:var(--soft)}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--mist)}
+.search{border:1px solid var(--hair);border-radius:999px;padding:8px 14px;font-size:14px;min-width:0;width:min(100%,260px)}
+.tw{overflow-x:auto;border-top:1px solid var(--hair)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font-weight:500;font-size:12px;color:var(--soft);white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--mist)}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+td .dim{color:var(--soft);font-size:13px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.35);z-index:30}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(100%,480px);background:#fff;z-index:31;overflow-y:auto;
+  padding:28px max(24px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 24px;box-shadow:-20px 0 60px rgba(0,0,0,.2)}
+.drawer .x{position:absolute;top:18px;right:max(18px,env(safe-area-inset-right,0px));background:none;border:0;font-size:22px;cursor:pointer;color:var(--soft)}
+.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;margin:20px 0 0;font-size:14px}
+.facts dt{color:var(--soft)}.facts dd{margin:0;word-break:break-word}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.callout{background:var(--mist);border-radius:14px;padding:14px 16px;font-size:14px;margin-top:20px}
+
+/* calendar */
+.calbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:24px 0 14px}
+.calbar .m{font-size:19px;font-weight:500;min-width:170px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .dow{font-size:12px;color:var(--soft);padding-bottom:4px}
+.cal .day{min-height:110px;border:1px solid var(--hair);border-radius:12px;padding:6px;font-size:13px;overflow:hidden;min-width:0}
+.cal .day.out{background:var(--mist);color:var(--soft)}
+.cal .day.today{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+.cal .ev{display:block;width:100%;text-align:left;margin-top:4px;border:0;border-radius:6px;padding:2px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.cal .ev.call{background:#fdf1dc;color:#6b4500}
+.cal .ev.event{background:#e7edf8;color:#1f3f7a}
+.cal .ev.trip{background:#e3f2ea;color:#155a38}
+.key{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--soft);margin-top:12px}
+.key i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* bookings + team */
+.totals{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0}
+.totals div b{display:block;font-weight:400;font-size:30px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.totals div span{color:var(--soft);font-size:13px}
+.steps{margin:14px 0 0;padding-left:20px;color:var(--ink)}
+.steps li{margin:6px 0}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:12px 20px;font-size:14px;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+
+@media (max-width:900px){
+  .figs{grid-template-columns:1fr 1fr;gap:18px 20px}
+  .cols{grid-template-columns:1fr}
+  .cal .day{min-height:74px}
+  .cal .ev{font-size:11px;padding:1px 4px}
+  .hide-sm{display:none}
+}
+@media (max-width:520px){
+  .row2{grid-template-columns:1fr}
+  .who .email{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- not configured -->
+<section class="auth" id="vNoConfig" hidden>
+  <div class="auth-card">
+    <div class="mark">CONTRAIL <small>Staff</small></div>
+    <h1 style="font-size:28px">Not connected yet</h1>
+    <p class="sub">The staff database isn't connected to this site yet. Add the Supabase project address and public key in <code>config.js</code>.</p>
+  </div>
+</section>
+
+<!-- sign in -->
+<section class="auth" id="vAuth" hidden>
+  <form class="auth-card" id="fSignIn" novalidate>
+    <div class="mark">CONTRAIL <small>Staff</small></div>
+    <h1 style="font-size:30px">Sign in</h1>
+    <p class="sub">For Contrail staff. Ask the owner for an account.</p>
+    <div class="field"><label for="siEmail">Email</label><input id="siEmail" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="siPass">Password</label><input id="siPass" type="password" autocomplete="current-password" required></div>
+    <button class="btn btn-black" type="submit" id="siBtn">Sign in</button>
+    <p class="msg" id="siMsg" role="status"></p>
+    <div class="auth-foot"><button class="link" type="button" id="siForgot">Forgot password?</button><a class="link" href="../">Back to Contrail</a></div>
+  </form>
+</section>
+
+<!-- set a new password (from an invite or reset email) -->
+<section class="auth" id="vNewPass" hidden>
+  <form class="auth-card" id="fNewPass" novalidate>
+    <div class="mark">CONTRAIL <small>Staff</small></div>
+    <h1 style="font-size:30px">Choose a password</h1>
+    <p class="sub">Use at least 10 characters.</p>
+    <div class="field"><label for="npPass">New password</label><input id="npPass" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="field"><label for="npPass2">Type it again</label><input id="npPass2" type="password" autocomplete="new-password" minlength="10" required></div>
+    <button class="btn btn-black" type="submit">Save password</button>
+    <p class="msg" id="npMsg" role="status"></p>
+  </form>
+</section>
+
+<!-- app -->
+<div id="vApp" hidden>
+  <header class="top"><div class="in">
+    <div class="bar">
+      <div class="mark">CONTRAIL <small>Staff</small></div>
+      <div class="who"><span id="meName"></span><span class="email" id="meEmail" style="color:#7d8187"></span><button class="btn btn-ghost-w" id="signOut" type="button">Sign out</button></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+      <button class="tab" role="tab" data-tab="calls">Call requests<span class="badge" id="newBadge" hidden></span></button>
+      <button class="tab" role="tab" data-tab="calendar">Calendar</button>
+      <button class="tab" role="tab" data-tab="bookings">Bookings</button>
+      <button class="tab" role="tab" data-tab="team">Team</button>
+    </nav>
+  </div></header>
+
+  <main class="sheet"><div class="in">
+
+    <section data-view="overview">
+      <div class="head"><div><h1 id="hello">Good morning</h1><p class="sub" id="helloSub"></p></div>
+        <button class="btn btn-black" type="button" data-new-call>Add a call request</button></div>
+      <ul class="figs">
+        <li><b id="kNew">—</b><span>New requests waiting</span></li>
+        <li><b id="kToday">—</b><span>Calls scheduled today</span></li>
+        <li><b id="kBookings">—</b><span>Bookings this month</span></li>
+        <li><b id="kComm">—</b><span>Commission this month</span></li>
+      </ul>
+      <div class="cols">
+        <div><h2>Needs a call back</h2><p class="sub">New requests, oldest first.</p><ul class="list" id="needList"></ul></div>
+        <div><h2>Coming up</h2><p class="sub">Scheduled calls and events, next 7 days.</p><ul class="list" id="upList"></ul></div>
+      </div>
+    </section>
+
+    <section data-view="calls" hidden>
+      <div class="head"><div><h1>Call requests</h1><p class="sub">From the website form, the phone line and the AI receptionist. Click one to call, schedule or update it.</p></div>
+        <button class="btn btn-black" type="button" data-new-call>Add a call request</button></div>
+      <div class="tools">
+        <div class="chips" id="stChips"></div>
+        <input class="search" id="callSearch" type="search" placeholder="Search name, phone or trip" aria-label="Search call requests">
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Received</th><th>Name</th><th>Phone</th><th class="hide-sm">Trip</th><th>Status</th><th class="hide-sm">Assigned</th><th>Call</th></tr></thead>
+        <tbody id="callRows"></tbody></table></div>
+      <p class="empty" id="callEmpty" hidden>No call requests match.</p>
+    </section>
+
+    <section data-view="calendar" hidden>
+      <div class="head"><div><h1>Calendar</h1><p class="sub">Scheduled call-backs, customer trips and team events.</p></div>
+        <button class="btn btn-black" type="button" id="addEvent">Add an event</button></div>
+      <div class="calbar"><button class="btn btn-line" type="button" data-cal="-1" aria-label="Previous month">←</button><span class="m" id="calMonth"></span><button class="btn btn-line" type="button" data-cal="1" aria-label="Next month">→</button><button class="btn btn-line" type="button" data-cal="0">Today</button></div>
+      <div class="cal" id="cal"></div>
+      <div class="key"><span><i style="background:#fdf1dc"></i>Call back</span><span><i style="background:#e3f2ea"></i>Customer trip</span><span><i style="background:#e7edf8"></i>Team event</span></div>
+    </section>
+
+    <section data-view="bookings" hidden>
+      <h1>Bookings</h1><p class="sub">Bookings credited to Contrail through Kiwi.com and Aviasales. Updated daily from Travelpayouts.</p>
+      <div class="totals"><div><b id="bCount">—</b><span>Bookings, all time</span></div><div><b id="bFare">—</b><span>Ticket sales</span></div><div><b id="bComm">—</b><span>Commission earned</span></div></div>
+      <div class="tw"><table>
+        <thead><tr><th>Booked</th><th>Route</th><th>Travel date</th><th>Partner</th><th>Fare</th><th>Commission</th><th>Status</th></tr></thead>
+        <tbody id="bookRows"></tbody></table></div>
+      <p class="empty" id="bookEmpty" hidden>No bookings yet. They show up here the day after someone books through Contrail.</p>
+    </section>
+
+    <section data-view="team" hidden>
+      <h1>Team</h1><p class="sub">Everyone with a staff login.</p>
+      <div class="tw" style="margin-top:22px"><table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Open requests</th></tr></thead>
+        <tbody id="teamRows"></tbody></table></div>
+      <div class="cols" style="margin-top:36px">
+        <form id="fName" novalidate><h2>Your name</h2><p class="sub">This is what teammates see when you're assigned a call.</p>
+          <div class="field"><label for="myName">Display name</label><input id="myName" maxlength="80"></div>
+          <div class="acts"><button class="btn btn-black" type="submit">Save name</button></div><p class="msg" id="nameMsg" role="status"></p></form>
+        <div><h2>Adding a teammate</h2><p class="sub">Only the owner can do this, in Supabase.</p>
+          <ol class="steps"><li>Open your project at supabase.com and go to <b>Authentication → Users</b>.</li>
+            <li>Click <b>Add user → Send invitation</b> and enter their email. They get an email to set a password.</li>
+            <li>They sign in here. To remove someone, delete their user in the same list.</li></ol></div>
+      </div>
+    </section>
+  </div></main>
+</div>
+
+<!-- call drawer -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog" aria-labelledby="dTitle">
+  <button class="x" type="button" id="dClose" aria-label="Close">×</button>
+  <form id="fCall" novalidate>
+    <h2 id="dTitle" style="font-size:24px;font-weight:400;letter-spacing:-.015em">Call request</h2>
+    <p class="sub" id="dSub"></p>
+    <div id="dNewFields">
+      <div class="field"><label for="cName">Name</label><input id="cName" maxlength="120"></div>
+      <div class="field"><label for="cPhone">Phone</label><input id="cPhone" type="tel" maxlength="30"></div>
+      <div class="field"><label for="cEmail">Email (optional)</label><input id="cEmail" type="email" maxlength="200"></div>
+      <div class="field"><label for="cTrip">Trip</label><input id="cTrip" maxlength="300" placeholder="For example, BWI to Orlando, Dec 4–10"></div>
+      <div class="field"><label for="cBest">Best time to call</label><input id="cBest" maxlength="120"></div>
+      <div class="field"><label for="cSource">How they reached us</label><select id="cSource"><option>Phone</option><option>AI receptionist</option><option>Website form</option></select></div>
+    </div>
+    <dl class="facts" id="dFacts"></dl>
+    <div class="acts" id="dQuick"></div>
+    <div class="row2">
+      <div class="field"><label for="cStatus">Status</label><select id="cStatus"><option>New</option><option>Scheduled</option><option>Called</option><option>Booked</option><option>No answer</option><option>Closed</option></select></div>
+      <div class="field"><label for="cAssign">Assigned to</label><select id="cAssign"></select></div>
+    </div>
+    <div class="field"><label for="cCallAt">Call back at</label><input id="cCallAt" type="datetime-local"></div>
+    <div class="field"><label for="cNotes">Notes</label><textarea id="cNotes" maxlength="4000" placeholder="What they want, what you found, what happens next"></textarea></div>
+    <div class="callout">Help them pick a flight on Contrail, then text them the booking link so they pay Kiwi.com or the airline directly. Never take card numbers over the phone.</div>
+    <div class="acts"><button class="btn btn-black" type="submit" id="cSave">Save</button><button class="btn btn-line" type="button" id="cCancel">Cancel</button></div>
+    <p class="msg" id="cMsg" role="status"></p>
+  </form>
+</aside>
+
+<!-- event drawer -->
+<aside class="drawer" id="evDrawer" hidden aria-modal="true" role="dialog" aria-labelledby="eTitle">
+  <button class="x" type="button" id="eClose" aria-label="Close">×</button>
+  <form id="fEvent" novalidate>
+    <h2 id="eTitle" style="font-size:24px;font-weight:400">Calendar event</h2>
+    <div class="field"><label for="eName">Title</label><input id="eName" maxlength="160"></div>
+    <div class="field"><label for="eAt">Date and time</label><input id="eAt" type="datetime-local"></div>
+    <div class="field"><label for="eDetail">Details (optional)</label><textarea id="eDetail" maxlength="2000"></textarea></div>
+    <div class="acts"><button class="btn btn-black" type="submit">Save event</button><button class="btn btn-line" type="button" id="eDelete" hidden>Delete event</button></div>
+    <p class="msg" id="eMsg" role="status"></p>
+  </form>
+</aside>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="../config.js"></script>
+<script src="staff.js?v=1"></script>
+</body>
+</html>
