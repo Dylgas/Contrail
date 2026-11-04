@@ -97,6 +97,7 @@ h2{font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.02em;line-h
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
 
 .block{margin-top:96px}
+.callline{margin:18px 0 6px}
 .pbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--ink);color:#fff;font-size:15px;
   padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
 @media (max-width:760px){.pbar:not([hidden]){display:flex}}
@@ -366,6 +367,8 @@ footer p{margin:0;max-width:70ch}
         <div>
           <h2>Want help booking?</h2>
           <p class="sub">Leave your number and a real person from Contrail will call you back to help find the right flight. You book and pay the airline or Kiwi.com directly.</p>
+          <p class="callline"><a class="btn btn-black" href="tel:+19896904469">Call (989) 690-4469</a></p>
+          <p class="sub">Our AI assistant answers, checks the flights we predict for your dates, takes your details and can connect you to a person right away.</p>
           <p class="disclose">Never share card numbers, passwords or passport details with us. We'll never ask for them.</p>
         </div>
         <form class="helpform" id="helpForm" novalidate>
@@ -405,9 +408,9 @@ footer p{margin:0;max-width:70ch}
   <p>Contrail tells you what's likely to fly and shows live prices. When you book, your ticket is issued by our booking partner.</p>
   <div class="actions"><a class="btn btn-white" href="#top-search">Plan another trip</a><a class="btn btn-line-w" id="realLink" href="#prices">See live prices</a></div>
 </section></div>
-<div class="in"><footer><span>© 2026 Contrail</span><p><a href="privacy.html" style="color:inherit">Privacy</a> · <a href="terms.html" style="color:inherit">Terms</a> · <a href="routes/" style="color:inherit">Routes</a>. Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
+<div class="in"><footer><span>© 2026 Contrail · <a href="tel:+19896904469" style="color:inherit">(989) 690-4469</a></span><p><a href="privacy.html" style="color:inherit">Privacy</a> · <a href="terms.html" style="color:inherit">Terms</a> · <a href="routes/" style="color:inherit">Routes</a>. Closing photo: <a href="https://commons.wikimedia.org/wiki/File:Japan_Airlines_Boeing_787-9_JA868J_silhouette_Feb_2025_2.jpg" target="_blank" rel="noopener" style="color:inherit">4300streetcar, CC BY 4.0</a>. Predictions are based on U.S. DOT Bureau of Transportation Statistics on-time records (public domain) and airport data from OpenFlights (ODbL). They cover domestic flights by major U.S. airlines and are not bookings or live schedules. Confirm with the airline before you travel.</p></footer></div>
 <div class="pbar" id="pbar" hidden><span id="pbarText"></span><a class="btn btn-white btn-sm" href="#prices">See live prices</a></div>
 <script src="config.js?v=2"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>
