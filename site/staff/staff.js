@@ -468,7 +468,9 @@ $("#qSheetBtn").addEventListener("click", async () => {
     travel_date: $("#qDate").value || null, date_label: r.date, travelers: trav >= 1 && trav <= 99 ? trav : null,
     options: picked.map(i => ({...r.options[i], price: price($(`.qprice[data-i="${i}"]`).value)})),
     note: $("#qNote").value.trim() || null, book_url: r.contrail_link, prepared_name: me.full_name || null,
-    expires_at: new Date(Date.now() + (+$("#qValidFor").value || 7) * 864e5).toISOString()};
+    // a quote never stays valid past the night before the flight
+    expires_at: new Date(Math.min(Date.now() + (+$("#qValidFor").value || 7) * 864e5,
+      $("#qDate").value ? Math.max(Date.now() + 36e5, new Date($("#qDate").value + "T00:00:00").getTime() - 1000) : Infinity)).toISOString()};
   btn.disabled = true; say($("#qMsg"), "Creating the quote sheet…");
   const {data, error} = await db.from("quotes").insert(row).select("token").single();
   btn.disabled = false;

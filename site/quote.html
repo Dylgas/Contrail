@@ -21,14 +21,14 @@ body{margin:0;color:var(--ink);font-family:var(--f);font-size:15px;line-height:1
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:11px 20px;font:500 15px var(--f);cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
 .btn-black{background:var(--ink);color:#fff}
 .btn-line{background:#fff;color:var(--ink);border-color:var(--line)}
-.page{max-width:880px;margin:14px auto 40px;background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.08);padding:48px 52px 40px;position:relative;overflow:hidden}
+.page{max-width:880px;margin:14px auto 40px;background:var(--paper);border-top:6px solid var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.08);padding:48px 52px 40px;position:relative;overflow:hidden}
 .head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:22px;border-bottom:2px solid var(--ink)}
-.brand .mark{font-weight:600;letter-spacing:.16em;font-size:20px}
+.brand .mark{font-weight:600;letter-spacing:.16em;font-size:20px;display:flex;align-items:center;gap:10px}.brand .mark svg{width:30px;height:30px;flex:none}
 .brand p{margin:6px 0 0;color:var(--soft);font-size:13px;line-height:1.5}
 .doc{text-align:right}
 .doc h1{margin:0;font-weight:500;font-size:34px;letter-spacing:.06em;line-height:1}
 .doc dl{display:grid;grid-template-columns:auto auto;gap:3px 14px;margin:12px 0 0;font-size:13px;justify-content:end}
-.doc dt{color:var(--soft);text-align:right}.doc dd{margin:0;text-align:right;font-weight:500}
+.doc .left{color:var(--good);font-weight:500}.doc dt{color:var(--soft);text-align:right}.doc dd{margin:0;text-align:right;font-weight:500}
 .parties{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
 .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin:0 0 5px;font-weight:500}
 .parties .v{font-size:16px;font-weight:500}
@@ -44,10 +44,17 @@ th.r,td.r{text-align:right}
 td .al{font-weight:500}td .fn{color:var(--soft);font-size:13px}
 td .conf{font-size:12px;color:var(--good)}td .conf.l{color:var(--soft)}td .conf.p{color:var(--warn)}
 td .lp{color:var(--soft);font-size:13px}
-.totals{display:flex;justify-content:flex-end;margin-top:14px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.tag{font-size:11px;font-weight:600;letter-spacing:.03em;padding:2px 8px;border-radius:4px;background:var(--ink);color:#fff}
+.tag.alt{background:#e7f3ec;color:var(--good)}
+td .via{display:block;color:var(--soft);font-size:12.5px}
+
+.totals{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-top:18px}
+.scan{display:flex;gap:14px;align-items:center;max-width:340px;font-size:12.5px;color:var(--soft)}.scan svg{width:92px;height:92px;flex:none}.scan b{color:var(--ink);font-weight:600;display:block;font-size:13px}
 .totals dl{display:grid;grid-template-columns:auto auto;gap:4px 28px;margin:0;font-size:14px;min-width:280px}
 .totals dt{color:var(--soft)}.totals dd{margin:0;text-align:right}
-.totals .big{font-size:18px;font-weight:600;color:var(--ink);padding-top:8px;border-top:1px solid var(--ink)}
+.totals .big{font-size:19px;font-weight:600;color:var(--ink);padding-top:10px;margin-top:4px;border-top:1px solid var(--ink)}
+.totals dd.big{padding-left:28px;margin-left:-28px}
 .note{border-left:3px solid var(--ink);background:var(--mist);padding:12px 16px;margin-top:6px;white-space:pre-wrap}
 .terms{margin:0;padding-left:18px;color:var(--soft);font-size:12.5px}
 .terms li{margin-bottom:4px}
@@ -67,12 +74,11 @@ td .lp{color:var(--soft);font-size:13px}
   table,tbody,tr,td{display:block;width:100%}
   tr{border-bottom:1px solid var(--hair);padding:10px 0;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
   td{border:0;padding:0}
-  td.o{display:none}
   td.f{grid-column:1/-1}
   td.t{grid-column:1}td.s{grid-column:1;color:var(--soft);font-size:13px}
   td.pp{grid-column:2;grid-row:2;text-align:right}td.tot{grid-column:2;grid-row:3;text-align:right;color:var(--soft);font-size:13px}
   td.tot:not(:empty)::before{content:"Total "}
-  .totals dl{min-width:0;width:100%}
+  .totals{flex-direction:column-reverse}.totals dl{min-width:0;width:100%}.scan{display:none}
   .stamp{top:20px;right:-70px}
   .bar .btn{flex:1 1 auto}
 }
@@ -99,10 +105,10 @@ td .lp{color:var(--soft);font-size:13px}
   <article class="page">
     <div class="stamp" id="qStamp" hidden>EXPIRED</div>
     <header class="head">
-      <div class="brand"><div class="mark">CONTRAIL</div>
+      <div class="brand"><div class="mark"><svg viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="3" fill="#0a0a0a"/><path d="M3 11 L11 3 L8.5 11 L7 8 Z" fill="#fff"/></svg>CONTRAIL</div>
         <p>Flight booking specialists<br>(989) 690-4469 · dylgas.github.io/Contrail</p></div>
       <div class="doc"><h1>QUOTE</h1>
-        <dl class="num"><dt>Quote no.</dt><dd id="qNo"></dd><dt>Issued</dt><dd id="qIssued"></dd><dt>Valid until</dt><dd id="qValid"></dd></dl></div>
+        <dl class="num"><dt>Quote no.</dt><dd id="qNo"></dd><dt>Issued</dt><dd id="qIssued"></dd><dt>Valid until</dt><dd id="qValid"></dd><dt></dt><dd class="left" id="qLeft"></dd></dl></div>
     </header>
 
     <section class="parties">
@@ -121,10 +127,10 @@ td .lp{color:var(--soft);font-size:13px}
 
     <h2>Flight options</h2>
     <table class="num">
-      <thead><tr><th>#</th><th>Airline / flight</th><th>Depart → arrive</th><th>Routing</th><th class="r">Per person</th><th class="r" id="qTotHead">Total</th></tr></thead>
+      <thead><tr><th>Option</th><th>Depart → arrive</th><th>Routing</th><th class="r">Per person</th><th class="r" id="qTotHead">Total</th></tr></thead>
       <tbody id="qOpts"></tbody>
     </table>
-    <div class="totals" id="qTotals" hidden><dl class="num" id="qTotalsDl"></dl></div>
+    <div class="totals"><div class="scan" id="qScan" hidden><span id="qQr"></span><span><b>Scan to book</b>Open this quote on your phone to see live fares and book.</span></div><dl class="num" id="qTotalsDl" hidden></dl></div>
 
     <div id="qNoteWrap" hidden><h2>Notes from your specialist</h2><div class="note" id="qNote"></div></div>
 
@@ -149,6 +155,7 @@ td .lp{color:var(--soft);font-size:13px}
 </div>
 
 <script src="config.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 (() => {
   "use strict";
@@ -184,22 +191,35 @@ td .lp{color:var(--soft);font-size:13px}
     $("#qBook").href = safeBook(q.book_url);
     const has = v => v != null && v !== "" && !isNaN(Number(v));
     const opts = q.options || [];
+    const mins = t => { const m = /(\d+):(\d+)\s*(AM|PM)/i.exec(t || ""); return m ? (m[1] % 12 + (/pm/i.test(m[3]) ? 12 : 0)) * 60 + +m[2] : null; };
+    const pr = opts.map(o => has(o.price) ? Number(o.price) : Infinity), lowest = Math.min(...pr);
+    const arr = opts.map(o => mins(o.arr) ?? Infinity), earliest = Math.min(...arr);
+    const left = Math.ceil((new Date(q.expires_at) - Date.now()) / 864e5);
+    $("#qLeft").textContent = q.expired ? "" : left <= 1 ? "Expires within a day" : `${left} days left`;
     $("#qOpts").innerHTML = opts.map((o, i) => {
       const cls = o.word === "very likely" ? "" : o.word === "likely" ? "l" : "p";
-      return `<tr><td class="o">${i + 1}</td>
-        <td class="f"><span class="al">Option ${i + 1} · ${esc(o.airline)}</span> <span class="fn">${esc(o.flights)}</span>${o.word ? `<div class="conf ${cls}">Schedule: ${esc(o.word)}</div>` : ""}</td>
+      const tags = [pr[i] === lowest && isFinite(lowest) && pr.filter(x => x === lowest).length === 1 ? `<span class="tag">Lowest fare</span>` : "",
+        arr[i] === earliest && isFinite(earliest) && opts.length > 1 && arr.filter(x => x === earliest).length === 1 ? `<span class="tag alt">Earliest arrival</span>` : "",
+        !o.stops && opts.some(x => x.stops) ? `<span class="tag alt">Nonstop</span>` : ""].join("");
+      return `<tr class="${pr[i] === lowest && isFinite(lowest) ? "best" : ""}">
+        <td class="f"><span class="al">Option ${i + 1} · ${esc(o.airline)}</span> <span class="fn">${esc(o.flights)}</span>${o.word ? `<div class="conf ${cls}">Schedule: ${esc(o.word)}</div>` : ""}${tags ? `<div class="tags">${tags}</div>` : ""}</td>
         <td class="t">${esc(o.dep)} → ${esc(o.arr)}</td>
-        <td class="s">${o.stops ? `1 stop · ${esc(o.via)}` : "Nonstop"}</td>
+        <td class="s">${o.stops ? `1 stop` : "Nonstop"}<span class="via">${esc(q.origin)} → ${o.stops ? esc(o.via) + " → " : ""}${esc(q.destination)}</span></td>
         <td class="r pp">${has(o.price) ? esc(usd(o.price)) : `<span class="lp">Live fare</span>`}</td>
         <td class="r tot">${has(o.price) ? esc(usd(o.price * trav)) : ""}</td></tr>`;
     }).join("");
     const priced = opts.filter(o => has(o.price)).map(o => Number(o.price));
     if (priced.length) {
       const lo = Math.min(...priced);
-      $("#qTotals").hidden = false;
+      $("#qTotalsDl").hidden = false;
       $("#qTotalsDl").innerHTML = `<dt>Lowest fare per person</dt><dd>${esc(usd(lo))}</dd><dt>Travelers</dt><dd>× ${trav}</dd>
         <dt class="big">Estimated total from</dt><dd class="big">${esc(usd(lo * trav))}</dd>`;
     }
+    try {
+      const link = location.origin + location.pathname + "#q=" + encodeURIComponent(token);
+      const qr = qrcode(0, "M"); qr.addData(link); qr.make();
+      $("#qQr").innerHTML = qr.createSvgTag({cellSize: 3, margin: 0, scalable: true}); $("#qScan").hidden = false;
+    } catch (e) { /* QR library unavailable: the buttons still work */ }
     if (q.note) { $("#qNoteWrap").hidden = false; $("#qNote").textContent = q.note; }
     $("#loading").hidden = true; $("#quote").hidden = false;
   }).catch(fail);
