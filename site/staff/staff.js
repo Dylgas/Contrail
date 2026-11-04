@@ -239,7 +239,13 @@ function openCall(id) {
   if (!c) { ["#cName", "#cPhone", "#cEmail", "#cTrip", "#cBest"].forEach(s => { $(s).value = ""; }); $("#cSource").value = "Phone"; }
   $("#dFacts").innerHTML = c ? [["Phone", c.phone], ["Email", c.email], ["Trip", c.trip], ["Best time", c.best_time], ["Message", c.message], ["Updated", c.updated_at ? `${fmtDateY(c.updated_at)}, ${fmtTime(c.updated_at)}` : null]]
     .filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("") : "";
-  $("#dQuick").innerHTML = c ? `<a class="btn btn-line" href="tel:${esc(c.phone.replace(/[^\d+]/g, ""))}">Call ${esc(c.phone)}</a><button class="btn btn-line" type="button" id="copyLink">Copy booking link</button>` : "";
+  $("#dQuick").innerHTML = c ? `<a class="btn btn-line" href="tel:${esc(c.phone.replace(/[^\d+]/g, ""))}">Call ${esc(c.phone)}</a><a class="btn btn-line" id="textLink" href="#">Text</a><button class="btn btn-line" type="button" id="copyLink">Copy booking link</button>` : "";
+  const tl = $("#textLink");
+  if (tl) tl.onclick = () => {   // opens the staff member's own Messages app with the booking link filled in
+    const first = (c.name || "").trim().split(/\s+/)[0] || "there", link = bookingLink(c);
+    const body = `Hi ${first}, it's Contrail. Here are the flights we found for your trip: ${link}\nReply here or call (989) 690-4469 if you have any questions.`;
+    tl.href = `sms:${c.phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(body)}`;
+  };
   $("#cStatus").value = c ? c.status : "New";
   $("#cAssign").innerHTML = `<option value="">Nobody yet</option>` + S.profiles.map(p => `<option value="${p.id}">${esc(p.full_name || p.email)}</option>`).join("");
   $("#cAssign").value = c ? (c.assigned_to || "") : S.me.id;
