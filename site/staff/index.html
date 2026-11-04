@@ -148,6 +148,9 @@ td .dim{color:var(--soft);font-size:13px}
   .who .email{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.linkbox{margin:10px 0 4px;padding:10px 12px;border-radius:10px;background:rgba(127,127,127,.12);font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:4px}
+.linkbox[hidden]{display:none}
+.linkbox a{word-break:break-all;color:inherit;font-weight:500}
 </style>
 </head>
 <body>
@@ -286,6 +289,7 @@ td .dim{color:var(--soft);font-size:13px}
     </div>
     <dl class="facts" id="dFacts"></dl>
     <div class="acts" id="dQuick"></div>
+    <div class="linkbox" id="linkBox" hidden></div>
     <div class="row2">
       <div class="field"><label for="cStatus">Status</label><select id="cStatus"><option>New</option><option>Scheduled</option><option>Called</option><option>Booked</option><option>No answer</option><option>Closed</option></select></div>
       <div class="field"><label for="cAssign">Assigned to</label><select id="cAssign"></select></div>
@@ -315,6 +319,6 @@ td .dim{color:var(--soft);font-size:13px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="../config.js?v=2"></script>
-<script src="staff.js?v=1"></script>
+<script src="staff.js?v=2"></script>
 </body>
 </html>

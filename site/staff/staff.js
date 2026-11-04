@@ -194,9 +194,41 @@ $("#fName").addEventListener("submit", async e => {
 });
 
 /* ---------- call drawer ---------- */
+// Builds a Contrail link for the trip, e.g. #BWI-MCO-20270506, from however the trip was written
+// ("BWI to MCO Dec 4", "One way from BWI (Baltimore) to MCO (Orlando) on May 6, 2027", "BWI-MCO 2026-12-04").
+let AIRPORTS = null;
+fetch("../data/airports.json").then(r => r.ok ? r.json() : null).then(j => { AIRPORTS = j; }).catch(() => {});
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+function tripDate(s) {
+  let m = /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/.exec(s);
+  if (m) return [+m[1], +m[2], +m[3]];
+  m = /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/.exec(s);
+  let y, mo, d;
+  if (m) { mo = +m[1]; d = +m[2]; y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : null; }
+  else {
+    m = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?/i.exec(s);
+    if (!m) return null;
+    mo = MONTHS.indexOf(m[1].slice(0, 3).toLowerCase()) + 1; d = +m[2]; y = m[3] ? +m[3] : null;
+  }
+  if (!y) { const now = new Date(); y = now.getFullYear(); if (new Date(y, mo - 1, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y++; }
+  return mo >= 1 && mo <= 12 && d >= 1 && d <= 31 ? [y, mo, d] : null;
+}
 function bookingLink(c) {
-  const m = /\b([A-Z]{3})\b[^A-Z]{1,12}\b([A-Z]{3})\b/.exec(c.trip || "");
-  return m ? `${SITE}#${m[1]}-${m[2]}` : SITE;
+  const s = [c.trip, c.message].filter(Boolean).join(" ");
+  const codes = [...new Set((s.match(/\b[A-Z]{3}\b/g) || []).filter(x => !["AND", "THE", "ONE", "WAY", "FOR", "AIR"].includes(x)))];
+  if (codes.length < 2 && AIRPORTS) {        // fall back to city names, e.g. "Baltimore to Orlando"
+    const low = s.toLowerCase(), best = {};
+    for (const [k, a] of Object.entries(AIRPORTS)) {
+      const city = (a.c || "").toLowerCase(); if (city.length < 4) continue;
+      const at = low.indexOf(city); if (at < 0) continue;
+      if (!best[city] || (a.d || 0) > (AIRPORTS[best[city].k].d || 0)) best[city] = {k, at};
+    }
+    Object.values(best).sort((x, y) => x.at - y.at).forEach(b => { if (!codes.includes(b.k)) codes.push(b.k); });
+  }
+  if (codes.length < 2) return SITE;
+  const t = tripDate(c.trip || "") || tripDate(s);
+  const date = t ? `-${t[0]}${String(t[1]).padStart(2, "0")}${String(t[2]).padStart(2, "0")}` : "";
+  return `${SITE}#${codes[0]}-${codes[1]}${date}`;
 }
 function openCall(id) {
   const c = id ? S.calls.find(x => String(x.id) === String(id)) : null;
@@ -215,8 +247,15 @@ function openCall(id) {
   $("#cNotes").value = c ? (c.notes || "") : "";
   say($("#cMsg"), "");
   $("#scrim").hidden = false; $("#drawer").hidden = false; (c ? $("#cStatus") : $("#cName")).focus();
-  const cl = $("#copyLink"); if (cl) cl.onclick = async () => { const link = bookingLink(c);
-    try { await navigator.clipboard.writeText(link); toast("Booking link copied. Paste it in a text to the customer."); } catch (e) { say($("#cMsg"), link, "ok"); } };
+  const cl = $("#copyLink"); if (cl) cl.onclick = async () => {
+    const link = bookingLink(c), box = $("#linkBox");
+    box.hidden = false;
+    box.innerHTML = `<span>${link === SITE ? "Couldn't tell the airports from this request, so this is the Contrail home page:" : "Booking link for this trip:"}</span>
+      <a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a>`;
+    try { await navigator.clipboard.writeText(link); toast("Booking link copied. Paste it in a text to the customer."); }
+    catch (e) { toast("Couldn't copy automatically. Select the link below and copy it."); }
+  };
+  const lb = $("#linkBox"); if (lb) { lb.hidden = true; lb.innerHTML = ""; }
 }
 function closeDrawers() { $("#scrim").hidden = true; $("#drawer").hidden = true; $("#evDrawer").hidden = true; S.editing = null; S.editingEvent = null; }
 document.addEventListener("click", e => {
