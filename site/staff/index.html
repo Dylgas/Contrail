@@ -279,6 +279,12 @@ button,.btn,.chip,.tab,.mini{touch-action:manipulation}
 }
 /* installed app: no browser bars, so give the top bar room under the status bar */
 @media (display-mode: standalone){ .top .bar{padding-top:max(18px,env(safe-area-inset-top,0px))} }
+
+.opts .qp{display:flex;align-items:center;gap:8px;padding:0 2px 12px 32px;font-size:13px;color:var(--soft)}
+.opts .qp input{width:110px;border:1px solid var(--hair);border-radius:10px;padding:7px 10px;font-size:15px}
+.opts li:has(input[type=checkbox]:not(:checked)) .qp{display:none}
+.qlinks{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.linkbox .qlinks .btn{word-break:normal}.linkbox .qlinks .btn-black{color:#fff}.linkbox .qlinks .btn-line{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -449,6 +455,7 @@ button,.btn,.chip,.tab,.mini{touch-action:manipulation}
     <div class="linkbox" id="linkBox" hidden></div>
     <p class="owner" id="dOwner" style="margin:12px 0 0"></p>
     <p class="sub" id="dCust" style="font-size:14px;margin-top:6px" hidden></p>
+    <div id="dQuotes" hidden><h2 style="font-size:16px;margin-top:20px">Quotes sent</h2><ul class="cust-reqs" id="dQuoteList"></ul></div>
     <details class="quote" id="qBox">
       <summary>Quote flights</summary>
       <p class="sub" style="font-size:13px">Look up the flights Contrail predicts, pick the ones to offer, and text them with the booking link.</p>
@@ -460,7 +467,15 @@ button,.btn,.chip,.tab,.mini{touch-action:manipulation}
       <div class="acts" style="margin-top:12px"><button class="btn btn-line" type="button" id="qFind">Find flights</button></div>
       <p class="msg" id="qMsg" role="status"></p>
       <ul class="opts" id="qOpts"></ul>
-      <div class="acts" id="qActs" hidden><a class="btn btn-black" id="qText" href="#">Text these</a><button class="btn btn-line" type="button" id="qCopy">Copy message</button></div>
+      <div id="qSheet" hidden>
+        <div class="row2">
+          <div class="field"><label for="qTrav">Travelers</label><input id="qTrav" type="number" min="1" max="99" inputmode="numeric" placeholder="1"></div>
+          <div class="field"><label for="qValidFor">Quote good for</label><select id="qValidFor"><option value="3">3 days</option><option value="7" selected>7 days</option><option value="14">14 days</option></select></div>
+        </div>
+        <div class="field"><label for="qNote">Note to the customer (optional)</label><textarea id="qNote" maxlength="1500" placeholder="For example: The 6:25 AM Frontier is the best price. Southwest includes 2 free checked bags."></textarea></div>
+      </div>
+      <div class="acts" id="qActs" hidden><button class="btn btn-black" type="button" id="qSheetBtn">Create quote sheet</button><a class="btn btn-line" id="qText" href="#">Text as a message</a><button class="btn btn-line" type="button" id="qCopy">Copy message</button></div>
+      <div class="linkbox" id="qSheetOut" hidden></div>
       <div class="linkbox" id="qPreview" hidden></div>
     </details>
     <div class="row2">
@@ -531,6 +546,6 @@ button,.btn,.chip,.tab,.mini{touch-action:manipulation}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="../config.js?v=2"></script>
-<script src="staff.js?v=6"></script>
+<script src="staff.js?v=7"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ if (!CFG.supabaseUrl || !CFG.supabaseAnonKey || !window.supabase) { show("vNoCon
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}});
 
 /* ---------- helpers ---------- */
-const S = {me: null, profiles: [], calls: [], bookings: [], events: [], filter: "Open", q: "", cq: "", calOff: 0, editing: null, editingEvent: null};
+const S = {me: null, profiles: [], calls: [], bookings: [], events: [], quotes: [], filter: "Open", q: "", cq: "", calOff: 0, editing: null, editingEvent: null};
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 const fmtDate = d => d ? new Date(d).toLocaleDateString("en-US", {month: "short", day: "numeric"}) : "—";
 const fmtDateY = d => d ? new Date(d).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric"}) : "—";
@@ -83,6 +83,8 @@ async function load() {
   ]);
   for (const r of [p, c, b, ev]) if (r.error) throw r.error;
   S.profiles = p.data; S.calls = c.data; S.bookings = b.data; S.events = ev.data;
+  const qs = await db.from("quotes").select("id,token,call_id,origin,destination,date_label,created_at,views,viewed_at,expires_at").order("created_at", {ascending: false}).limit(500);
+  S.quotes = qs.error ? [] : qs.data;   // quote sheets are optional until quotes.sql has been run
 }
 let channel = null;
 function startLive() {
@@ -408,13 +410,16 @@ $("#fCall").addEventListener("submit", async e => {
 /* ---------- quote builder ---------- */
 const Q = {res: null, call: null};
 function setupQuote(c) {
-  Q.res = null; Q.call = c;
+  Q.res = null; Q.call = c; $("#dQuotes").hidden = true;
   $("#qBox").hidden = !c; $("#qBox").open = false;
   $("#qOpts").innerHTML = ""; $("#qActs").hidden = true; $("#qPreview").hidden = true; say($("#qMsg"), "");
   if (!c) return;
   const {o, d, t} = parseTrip(c);
   $("#qFrom").value = o || ""; $("#qTo").value = d || "";
   $("#qDate").value = t ? `${t[0]}-${String(t[1]).padStart(2, "0")}-${String(t[2]).padStart(2, "0")}` : "";
+  const tv = /(\d{1,2})\s*(?:travel(?:l)?ers?|people|passengers|adults|ppl)/i.exec([c.trip, c.message].join(" "));
+  $("#qTrav").value = tv ? tv[1] : ""; $("#qNote").value = ""; $("#qSheetOut").hidden = true; $("#qSheet").hidden = true;
+  renderQuotes(c);
 }
 function quoteText() {
   const c = Q.call, r = Q.res; if (!c || !r) return "";
@@ -426,7 +431,7 @@ function quoteText() {
 }
 function refreshQuote() {
   const picked = $$("#qOpts input:checked").length;
-  $("#qActs").hidden = !picked;
+  $("#qActs").hidden = !picked; $("#qSheet").hidden = !picked;
   const t = quoteText(); $("#qText").href = Q.call ? smsHref(Q.call.phone, t) : "#";
   $("#qPreview").hidden = !picked; $("#qPreview").textContent = t;
 }
@@ -442,11 +447,51 @@ $("#qFind").addEventListener("click", async () => {
     say($("#qMsg"), `${r.from_city} → ${r.to_city}, ${r.date}. Predictions from past schedules.`, "ok");
     $("#qOpts").innerHTML = r.options.map((o, i) => `<li><label><input type="checkbox" value="${i}" ${i < 3 ? "checked" : ""}>
       <span><b style="font-weight:500">${esc(o.airline)} ${esc(o.flights)}</b> · ${esc(o.dep)} → ${esc(o.arr)}</span>
-      <span class="o-conf">${esc(o.word)}<br>${o.conf}%</span><span class="o-sub">${o.stops ? "1 stop in " + esc(o.via) : "Nonstop"}</span></label></li>`).join("");
+      <span class="o-conf">${esc(o.word)}<br>${o.conf}%</span><span class="o-sub">${o.stops ? "1 stop in " + esc(o.via) : "Nonstop"}</span></label>
+      <div class="qp">Price per person <input class="qprice" data-i="${i}" inputmode="decimal" placeholder="$ optional" aria-label="Price per person for ${esc(o.airline)} ${esc(o.flights)}"></div></li>`).join("");
+    $("#qSheetOut").hidden = true;
     refreshQuote();
   } catch (e) { say($("#qMsg"), friendly(e), "bad"); }
 });
-$("#qOpts").addEventListener("change", refreshQuote);
+$("#qOpts").addEventListener("change", e => { if (e.target.type === "checkbox") refreshQuote(); });
+
+/* ---------- quote sheets (a branded page the customer opens) ---------- */
+const quoteUrl = t => `${SITE}quote.html#q=${t}`;
+const price = v => { const n = parseFloat(String(v || "").replace(/[^\d.]/g, "")); return isFinite(n) && n > 0 && n < 100000 ? Math.round(n * 100) / 100 : null; };
+$("#qSheetBtn").addEventListener("click", async () => {
+  const c = Q.call, r = Q.res, btn = $("#qSheetBtn");
+  const picked = [...$$("#qOpts input:checked")].map(i => +i.value);
+  if (!c || !r || !picked.length) return;
+  const trav = parseInt($("#qTrav").value, 10);
+  const me = S.profiles.find(p => p.id === S.me.id) || {};
+  const row = {call_id: c.id, customer_name: c.name, origin: r.from, destination: r.to, from_city: r.from_city, to_city: r.to_city,
+    travel_date: $("#qDate").value || null, date_label: r.date, travelers: trav >= 1 && trav <= 99 ? trav : null,
+    options: picked.map(i => ({...r.options[i], price: price($(`.qprice[data-i="${i}"]`).value)})),
+    note: $("#qNote").value.trim() || null, book_url: r.contrail_link, prepared_name: me.full_name || null,
+    expires_at: new Date(Date.now() + (+$("#qValidFor").value || 7) * 864e5).toISOString()};
+  btn.disabled = true; say($("#qMsg"), "Creating the quote sheet…");
+  const {data, error} = await db.from("quotes").insert(row).select("token").single();
+  btn.disabled = false;
+  if (error) return say($("#qMsg"), /relation .*quotes|does not exist/i.test(error.message) ? "Quote sheets aren't switched on yet. Run quotes.sql in Supabase first." : friendly(error), "bad");
+  const url = quoteUrl(data.token), first = (c.name || "").trim().split(/\s+/)[0] || "there";
+  const msg = `Hi ${first}, it's Contrail. Here's your flight quote for ${r.from_city} → ${r.to_city} on ${r.date}: ${url}\nTap a flight to see live prices and book, or call ${PHONE_LINE} and we'll help.`;
+  const out = $("#qSheetOut"); out.hidden = false;
+  out.innerHTML = `<span>Quote sheet ready. Send this link to ${esc(first)}:</span><a href="${esc(url)}&preview" target="_blank" rel="noopener">${esc(url)}</a>
+    <div class="qlinks"><a class="btn btn-black" href="${esc(smsHref(c.phone, msg))}" id="qSheetText">Text it</a><button class="btn btn-line" type="button" id="qSheetCopy">Copy link</button><a class="btn btn-line" href="${esc(url)}&preview" target="_blank" rel="noopener">Preview</a></div>`;
+  $("#qSheetText").addEventListener("click", () => toast("Opening Messages. Click Save to keep the note."));
+  $("#qSheetCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(url); toast("Link copied."); } catch (e) { toast("Select the link above and copy it."); } });
+  addNote(`Made a quote sheet: ${r.from}→${r.to} ${r.date}, ${picked.length} option${picked.length > 1 ? "s" : ""}`);
+  haptic(); say($("#qMsg"), "Quote sheet created. Send the link, then click Save.", "ok");
+  const fresh = await db.from("quotes").select("id,token,call_id,origin,destination,date_label,created_at,views,viewed_at,expires_at").order("created_at", {ascending: false}).limit(500);
+  if (!fresh.error) { S.quotes = fresh.data; renderQuotes(c); }
+});
+function renderQuotes(c) {
+  const list = c ? S.quotes.filter(q => q.call_id === c.id) : [];
+  $("#dQuotes").hidden = !list.length;
+  $("#dQuoteList").innerHTML = list.map(q => `<li><a href="${esc(quoteUrl(q.token))}&preview" target="_blank" rel="noopener" style="all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:12px 4px;font-size:14px">
+    <span>${esc(q.origin)} → ${esc(q.destination)} · ${esc(q.date_label || "")}</span><span class="d">${q.views ? `Opened ${q.views}×` : "Not opened yet"}</span>
+    <span class="d">Sent ${esc(fmtDateY(q.created_at))}${new Date(q.expires_at) < new Date() ? " · expired" : ""}</span><span class="d">${q.viewed_at ? esc(ago(q.viewed_at)) : ""}</span></a></li>`).join("");
+}
 $("#qText").addEventListener("click", e => {
   if (!$$("#qOpts input:checked").length) { e.preventDefault(); return; }
   refreshQuote(); addNote(`Texted a quote: ${Q.res.from}→${Q.res.to} ${Q.res.date} (${$$("#qOpts input:checked").length} options)`);
