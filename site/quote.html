@@ -4,99 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="color-scheme" content="only light">
 <meta name="referrer" content="no-referrer">
-<title>Your flight quote · Contrail</title>
+<meta name="color-scheme" content="only light">
+<title>Flight quote · Contrail</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect width='14' height='14' rx='3' fill='%230a0a0a'/%3E%3Cpath d='M3 11 L11 3 L8.5 11 L7 8 Z' fill='white'/%3E%3C/svg%3E">
 <style>
-:root{--ink:#0a0a0a;--paper:#fff;--mist:#f4f5f6;--hair:#e6e7e9;--soft:#6b6f75;--good:#1f7a4d;--warn:#a46a00;--f:"Inter Tight","Inter","Helvetica Neue",Arial,sans-serif;color-scheme:only light}
+:root{--ink:#0a0a0a;--paper:#fff;--desk:#e9ebee;--mist:#f5f6f7;--hair:#e3e5e8;--line:#cfd3d8;--soft:#62666c;--good:#1f7a4d;--warn:#a46a00;--f:"Inter Tight","Inter","Helvetica Neue",Arial,sans-serif;color-scheme:only light}
 *{box-sizing:border-box}
-html{background:var(--ink)}
-body{margin:0;background:var(--ink);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+html,body{background:var(--desk)}
+body{margin:0;color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
-.in{max-width:860px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
-.top{color:#fff;padding:22px 0 26px}
-.top .in{display:flex;justify-content:space-between;align-items:center;gap:16px}
-.mark{font-weight:500;letter-spacing:.14em;font-size:16px;color:#fff;text-decoration:none}
-.top a.call{color:#d6d8db;text-decoration:none;font-size:14px;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 14px;white-space:nowrap}
-.sheet{background:var(--paper);border-radius:24px 24px 0 0;min-height:80vh}
-.sheet > .in{padding-block:40px calc(64px + env(safe-area-inset-bottom,0px))}
-.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0}
-h1{font-weight:400;font-size:clamp(30px,5.4vw,48px);letter-spacing:-.025em;line-height:1.08;margin:10px 0 0}
-.route{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:26px;font-size:clamp(22px,3.6vw,30px);letter-spacing:-.015em}
-.route .arrow{color:var(--soft)}
-.route small{display:block;font-size:13px;color:var(--soft);letter-spacing:.04em}
-.meta{display:flex;gap:10px 28px;flex-wrap:wrap;margin-top:18px;color:var(--soft);font-size:15px}
-.meta b{color:var(--ink);font-weight:500}
-.opts{list-style:none;margin:34px 0 0;padding:0;border-top:1px solid var(--ink)}
-.opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;padding:20px 2px;border-bottom:1px solid var(--hair);align-items:center}
-.opt .al{font-size:19px;font-weight:500;letter-spacing:-.01em}
-.opt .fn{color:var(--soft);font-weight:400;font-size:15px}
-.opt .tm{font-size:17px;font-variant-numeric:tabular-nums}
-.opt .sub{color:var(--soft);font-size:14px}
-.opt .pr{grid-row:1 / span 3;grid-column:2;text-align:right}
-.opt .pr b{display:block;font-weight:400;font-size:28px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
-.opt .pr span{font-size:13px;color:var(--soft)}
-.lk{display:inline-block;font-size:12px;font-weight:500;padding:2px 10px;border-radius:999px;border:1px solid currentColor;margin-left:8px;vertical-align:2px}
-.lk.vl{color:var(--good)}.lk.l{color:var(--ink)}.lk.p{color:var(--warn)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:14px 24px;font-size:16px;font-weight:500;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.bar{max-width:880px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-left,0px)) 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:11px 20px;font:500 15px var(--f);cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
 .btn-black{background:var(--ink);color:#fff}
-.btn-line{background:#fff;color:var(--ink);border-color:var(--hair)}
-.acts{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
-.note{background:var(--mist);border-radius:18px;padding:20px 22px;margin-top:34px}
-.note p{margin:6px 0 0;white-space:pre-wrap}
-.note .by{font-size:14px;color:var(--soft);margin:0}
-.fine{margin-top:34px;font-size:13px;color:var(--soft);border-top:1px solid var(--hair);padding-top:18px}
-.fine p{margin:0 0 8px}
-.state{padding:60px 0;text-align:left}
-.state h1{font-size:34px}
-.state p{color:var(--soft);max-width:520px}
-.expired{background:#fdf1dc;color:#6b4500;border-radius:14px;padding:12px 16px;margin-top:22px;font-size:15px}
-@media (max-width:560px){
-  .opt{grid-template-columns:1fr}
-  .opt .pr{grid-row:auto;grid-column:auto;text-align:left;display:flex;align-items:baseline;gap:8px;margin-top:4px}
-  .opt .pr b{font-size:24px}
-  .acts .btn{flex:1 1 100%}
-  .route{flex-direction:column;gap:10px}.route .arrow{display:none}
+.btn-line{background:#fff;color:var(--ink);border-color:var(--line)}
+.page{max-width:880px;margin:14px auto 40px;background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.08);padding:48px 52px 40px;position:relative;overflow:hidden}
+.head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:22px;border-bottom:2px solid var(--ink)}
+.brand .mark{font-weight:600;letter-spacing:.16em;font-size:20px}
+.brand p{margin:6px 0 0;color:var(--soft);font-size:13px;line-height:1.5}
+.doc{text-align:right}
+.doc h1{margin:0;font-weight:500;font-size:34px;letter-spacing:.06em;line-height:1}
+.doc dl{display:grid;grid-template-columns:auto auto;gap:3px 14px;margin:12px 0 0;font-size:13px;justify-content:end}
+.doc dt{color:var(--soft);text-align:right}.doc dd{margin:0;text-align:right;font-weight:500}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
+.lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin:0 0 5px;font-weight:500}
+.parties .v{font-size:16px;font-weight:500}
+.parties .s{color:var(--soft);font-size:13px}
+.trip{display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr;margin-top:26px;border:1px solid var(--hair);background:var(--mist)}
+.trip > div{padding:12px 14px;border-left:1px solid var(--hair)}.trip > div:first-child{border-left:0}
+.trip .v{font-weight:500}
+h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:30px 0 8px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);font-weight:500;text-align:left;padding:9px 8px;border-bottom:1px solid var(--ink);white-space:nowrap}
+td{padding:12px 8px;border-bottom:1px solid var(--hair);vertical-align:top}
+th.r,td.r{text-align:right}
+td .al{font-weight:500}td .fn{color:var(--soft);font-size:13px}
+td .conf{font-size:12px;color:var(--good)}td .conf.l{color:var(--soft)}td .conf.p{color:var(--warn)}
+td .lp{color:var(--soft);font-size:13px}
+.totals{display:flex;justify-content:flex-end;margin-top:14px}
+.totals dl{display:grid;grid-template-columns:auto auto;gap:4px 28px;margin:0;font-size:14px;min-width:280px}
+.totals dt{color:var(--soft)}.totals dd{margin:0;text-align:right}
+.totals .big{font-size:18px;font-weight:600;color:var(--ink);padding-top:8px;border-top:1px solid var(--ink)}
+.note{border-left:3px solid var(--ink);background:var(--mist);padding:12px 16px;margin-top:6px;white-space:pre-wrap}
+.terms{margin:0;padding-left:18px;color:var(--soft);font-size:12.5px}
+.terms li{margin-bottom:4px}
+.steps{margin:0;padding-left:18px;font-size:14px}.steps li{margin-bottom:4px}
+.foot{margin-top:30px;padding-top:14px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--soft);font-size:12px}
+.stamp{position:absolute;top:150px;right:-60px;transform:rotate(28deg);background:#b3261e;color:#fff;font-weight:600;letter-spacing:.2em;padding:6px 80px;font-size:14px}
+.expired{background:#fdf1dc;color:#6b4500;padding:10px 14px;margin-top:18px;font-size:14px}
+.state{max-width:880px;margin:14px auto;background:#fff;padding:48px 52px}
+.state h1{font-weight:500;font-size:28px;margin:8px 0}
+.state p{color:var(--soft)}
+@media (max-width:680px){
+  .page,.state{margin:10px 0 24px;padding:26px 18px 24px;box-shadow:none}
+  .head{flex-direction:column;gap:16px}.doc{text-align:left}.doc dl{justify-content:start}.doc dt,.doc dd{text-align:left}
+  .parties{grid-template-columns:1fr;gap:14px}
+  .trip{grid-template-columns:1fr 1fr}.trip > div:nth-child(3){border-left:0}.trip > div:nth-child(n+3){border-top:1px solid var(--hair)}
+  thead{display:none}
+  table,tbody,tr,td{display:block;width:100%}
+  tr{border-bottom:1px solid var(--hair);padding:10px 0;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
+  td{border:0;padding:0}
+  td.o{display:none}
+  td.f{grid-column:1/-1}
+  td.t{grid-column:1}td.s{grid-column:1;color:var(--soft);font-size:13px}
+  td.pp{grid-column:2;grid-row:2;text-align:right}td.tot{grid-column:2;grid-row:3;text-align:right;color:var(--soft);font-size:13px}
+  td.tot:not(:empty)::before{content:"Total "}
+  .totals dl{min-width:0;width:100%}
+  .stamp{top:20px;right:-70px}
+  .bar .btn{flex:1 1 auto}
 }
 @media print{
   html,body{background:#fff}
-  .top{color:var(--ink);padding:0 0 12px}.top .mark{color:var(--ink)}.top a.call{color:var(--ink);border-color:var(--hair)}
-  .sheet{border-radius:0;min-height:0}.sheet > .in{padding:12px 0 0}
-  .acts{display:none}
-  .opt{break-inside:avoid}
-  a{color:inherit}
+  .bar{display:none}
+  .page{box-shadow:none;margin:0;padding:0;max-width:none}
+  tr{break-inside:avoid}
+  @page{margin:16mm}
 }
 </style>
 </head>
 <body>
-<header class="top"><div class="in"><a class="mark" href="./">CONTRAIL</a><a class="call" href="tel:+19896904469">Call (989) 690-4469</a></div></header>
-<main class="sheet"><div class="in">
+<div class="state" id="loading"><p class="lbl">Flight quote</p><h1>Loading your quote…</h1></div>
+<div class="state" id="missing" hidden><p class="lbl">Flight quote</p><h1>We couldn't find this quote</h1>
+  <p>The link may be incomplete. Ask your Contrail specialist to send it again, or call us at <a href="tel:+19896904469">(989) 690-4469</a>.</p></div>
 
-  <div class="state" id="loading"><p class="kicker">Flight quote</p><h1>Loading your quote…</h1></div>
-  <div class="state" id="missing" hidden><p class="kicker">Flight quote</p><h1>We couldn't find this quote</h1>
-    <p>The link may be incomplete. Ask your Contrail specialist to send it again, or call us at <a href="tel:+19896904469">(989) 690-4469</a>.</p>
-    <div class="acts"><a class="btn btn-black" href="./">Search flights on Contrail</a></div></div>
+<div id="quote" hidden>
+  <div class="bar">
+    <a class="btn btn-black" id="qBook" href="./">Book now</a>
+    <a class="btn btn-line" href="tel:+19896904469">Call to book</a>
+    <button class="btn btn-line" type="button" id="qPrint">Download PDF</button>
+  </div>
+  <article class="page">
+    <div class="stamp" id="qStamp" hidden>EXPIRED</div>
+    <header class="head">
+      <div class="brand"><div class="mark">CONTRAIL</div>
+        <p>Flight booking specialists<br>(989) 690-4469 · dylgas.github.io/Contrail</p></div>
+      <div class="doc"><h1>QUOTE</h1>
+        <dl class="num"><dt>Quote no.</dt><dd id="qNo"></dd><dt>Issued</dt><dd id="qIssued"></dd><dt>Valid until</dt><dd id="qValid"></dd></dl></div>
+    </header>
 
-  <article id="quote" hidden>
-    <p class="kicker" id="qKicker">Flight quote</p>
-    <h1 id="qTitle">Your flight quote</h1>
-    <div class="route"><span><small>From</small><span id="qFrom"></span></span><span class="arrow">→</span><span><small>To</small><span id="qTo"></span></span></div>
-    <div class="meta"><span>Departing <b id="qDate"></b></span><span id="qTravWrap">Travelers <b id="qTrav"></b></span><span>Valid until <b id="qValid"></b></span></div>
-    <div class="expired" id="qExpired" hidden>This quote has expired. Prices and schedules may have changed, so check the live price below or ask us for an updated quote.</div>
-    <ul class="opts" id="qOpts"></ul>
-    <div class="acts"><a class="btn btn-black" id="qBook" href="./">See live prices and book</a><a class="btn btn-line" href="tel:+19896904469">Call to book with us</a><button class="btn btn-line" type="button" id="qPrint">Save as PDF</button></div>
-    <div class="note" id="qNoteBox" hidden><p class="by" id="qBy"></p><p id="qNote"></p></div>
-    <div class="fine">
-      <p><b style="color:var(--ink);font-weight:500">How this quote works.</b> These flights are based on the schedules airlines have been flying on this route. Prices shown were checked when this quote was made and can change until you book. Your specialist will confirm the details with you.</p>
-      <p>You book and pay the airline or our booking partner directly on their secure checkout. Contrail will never ask for your card number, password or passport details by phone or text.</p>
-      <p id="qMade"></p>
-    </div>
+    <section class="parties">
+      <div><p class="lbl">Prepared for</p><div class="v" id="qFor"></div></div>
+      <div><p class="lbl">Prepared by</p><div class="v" id="qBy"></div><div class="s">Contrail · (989) 690-4469</div></div>
+    </section>
+
+    <div class="expired" id="qExpired" hidden>This quote has expired. Fares and schedules may have changed. Call us or ask your specialist for an updated quote.</div>
+
+    <section class="trip">
+      <div><p class="lbl">Route</p><div class="v" id="qRoute"></div></div>
+      <div><p class="lbl">Departure</p><div class="v" id="qDate"></div></div>
+      <div><p class="lbl">Travelers</p><div class="v num" id="qTrav"></div></div>
+      <div><p class="lbl">Trip type</p><div class="v">One way</div></div>
+    </section>
+
+    <h2>Flight options</h2>
+    <table class="num">
+      <thead><tr><th>#</th><th>Airline / flight</th><th>Depart → arrive</th><th>Routing</th><th class="r">Per person</th><th class="r" id="qTotHead">Total</th></tr></thead>
+      <tbody id="qOpts"></tbody>
+    </table>
+    <div class="totals" id="qTotals" hidden><dl class="num" id="qTotalsDl"></dl></div>
+
+    <div id="qNoteWrap" hidden><h2>Notes from your specialist</h2><div class="note" id="qNote"></div></div>
+
+    <h2>How to book</h2>
+    <ol class="steps">
+      <li>Pick the option you want. Tap <b>Book now</b> to see the live fare and book it on our secure partner checkout.</li>
+      <li>Or call <b>(989) 690-4469</b> and we'll walk you through booking. Have this quote number ready.</li>
+      <li>You pay the airline or our booking partner directly. We never take card numbers by phone or text.</li>
+    </ol>
+
+    <h2>Terms</h2>
+    <ol class="terms">
+      <li>Fares were checked when this quote was issued and are not guaranteed until booked and ticketed. Airlines change prices and seat availability without notice.</li>
+      <li>Flight options are based on the schedules the airline has been operating on this route. Final flight numbers and times are confirmed at booking.</li>
+      <li>Prices are per person in US dollars and include taxes and airline fees shown at checkout. Checked bags, seat selection and other extras may cost more.</li>
+      <li>Changes and cancellations follow the airline's fare rules for the ticket you buy.</li>
+      <li>This quote is valid until the date shown above.</li>
+    </ol>
+
+    <footer class="foot"><span id="qFootNo"></span><span>Contrail · (989) 690-4469 · Thank you for choosing us</span></footer>
   </article>
+</div>
 
-</div></main>
 <script src="config.js?v=2"></script>
 <script>
 (() => {
@@ -108,33 +159,48 @@ h1{font-weight:400;font-size:clamp(30px,5.4vw,48px);letter-spacing:-.025em;line-
   const token = p.get("q"), preview = p.has("preview");
   const fail = () => { $("#loading").hidden = true; $("#missing").hidden = false; };
   if (!token || !CFG.supabaseUrl) return fail();
-  const fmt = d => new Date(d).toLocaleDateString("en-US", {weekday: "short", month: "long", day: "numeric", year: "numeric"});
-  const usd = n => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2});
+  const fmt = d => new Date(d).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric"});
+  const long = d => new Date(d).toLocaleDateString("en-US", {weekday: "short", month: "short", day: "numeric", year: "numeric"});
+  const usd = n => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
   const safeBook = u => (typeof u === "string" && u.startsWith("https://dylgas.github.io/Contrail/")) ? u : "./";
   fetch(`${CFG.supabaseUrl}/rest/v1/rpc/get_quote`, {method: "POST",
     headers: {"Content-Type": "application/json", apikey: CFG.supabaseAnonKey, Authorization: `Bearer ${CFG.supabaseAnonKey}`},
     body: JSON.stringify({t: token, count_view: !preview})})
   .then(r => r.ok ? r.json() : null).then(q => {
     if (!q) return fail();
-    const first = (q.customer_name || "").trim().split(/\s+/)[0];
-    document.title = `Flight quote for ${first} · Contrail`;
-    $("#qTitle").textContent = first ? `Your flight quote, ${first}` : "Your flight quote";
-    $("#qFrom").textContent = q.from_city ? `${q.from_city} (${q.origin})` : (q.origin || "—");
-    $("#qTo").textContent = q.to_city ? `${q.to_city} (${q.destination})` : (q.destination || "—");
-    $("#qDate").textContent = q.date_label || (q.travel_date ? fmt(q.travel_date + "T12:00:00") : "—");
-    $("#qTravWrap").hidden = !q.travelers; $("#qTrav").textContent = q.travelers || "";
-    $("#qValid").textContent = fmt(q.expires_at);
-    $("#qExpired").hidden = !q.expired;
-    const book = safeBook(q.book_url); $("#qBook").href = book;
-    const per = q.travelers > 1 ? "per person" : "per traveler";
-    $("#qOpts").innerHTML = (q.options || []).map(o => {
-      const lk = o.word === "very likely" ? "vl" : o.word === "likely" ? "l" : "p";
-      const price = o.price != null && o.price !== "" ? `<b>${esc(usd(o.price))}</b><span>${per}${q.travelers > 1 ? ` · ${esc(usd(o.price * q.travelers))} total` : ""}</span>` : `<b style="font-size:17px">Live price</b><span>tap See live prices</span>`;
-      return `<li class="opt"><div class="al">${esc(o.airline)} <span class="fn">${esc(o.flights)}</span>${o.word ? `<span class="lk ${lk}">${esc(o.word)}</span>` : ""}</div>
-        <div class="tm">${esc(o.dep)} → ${esc(o.arr)}</div><div class="sub">${o.stops ? `1 stop in ${esc(o.via)}` : "Nonstop"}</div><div class="pr">${price}</div></li>`;
+    const created = new Date(q.created_at);
+    const no = "CQ-" + created.toISOString().slice(2, 10).replace(/-/g, "") + "-" + String(q.quote_no ?? "").padStart(4, "0");
+    document.title = `Quote ${no} · Contrail`;
+    $("#qNo").textContent = no; $("#qFootNo").textContent = `Quote ${no}`;
+    $("#qIssued").textContent = fmt(q.created_at); $("#qValid").textContent = fmt(q.expires_at);
+    $("#qFor").textContent = q.customer_name || "—";
+    $("#qBy").textContent = q.prepared_name || "Contrail specialist";
+    const city = (c, code) => c ? `${c} (${code})` : (code || "—");
+    $("#qRoute").textContent = `${city(q.from_city, q.origin)} → ${city(q.to_city, q.destination)}`;
+    $("#qDate").textContent = q.date_label || (q.travel_date ? long(q.travel_date + "T12:00:00") : "—");
+    const trav = q.travelers || 1;
+    $("#qTrav").textContent = q.travelers ? `${trav} adult${trav > 1 ? "s" : ""}` : "—";
+    $("#qExpired").hidden = $("#qStamp").hidden = !q.expired;
+    $("#qBook").href = safeBook(q.book_url);
+    const has = v => v != null && v !== "" && !isNaN(Number(v));
+    const opts = q.options || [];
+    $("#qOpts").innerHTML = opts.map((o, i) => {
+      const cls = o.word === "very likely" ? "" : o.word === "likely" ? "l" : "p";
+      return `<tr><td class="o">${i + 1}</td>
+        <td class="f"><span class="al">Option ${i + 1} · ${esc(o.airline)}</span> <span class="fn">${esc(o.flights)}</span>${o.word ? `<div class="conf ${cls}">Schedule: ${esc(o.word)}</div>` : ""}</td>
+        <td class="t">${esc(o.dep)} → ${esc(o.arr)}</td>
+        <td class="s">${o.stops ? `1 stop · ${esc(o.via)}` : "Nonstop"}</td>
+        <td class="r pp">${has(o.price) ? esc(usd(o.price)) : `<span class="lp">Live fare</span>`}</td>
+        <td class="r tot">${has(o.price) ? esc(usd(o.price * trav)) : ""}</td></tr>`;
     }).join("");
-    if (q.note) { $("#qNoteBox").hidden = false; $("#qNote").textContent = q.note; $("#qBy").textContent = q.prepared_name ? `A note from ${q.prepared_name}` : "A note from your Contrail specialist"; }
-    $("#qMade").textContent = `Prepared ${fmt(q.created_at)}${q.prepared_name ? ` by ${q.prepared_name}` : ""} · Contrail`;
+    const priced = opts.filter(o => has(o.price)).map(o => Number(o.price));
+    if (priced.length) {
+      const lo = Math.min(...priced);
+      $("#qTotals").hidden = false;
+      $("#qTotalsDl").innerHTML = `<dt>Lowest fare per person</dt><dd>${esc(usd(lo))}</dd><dt>Travelers</dt><dd>× ${trav}</dd>
+        <dt class="big">Estimated total from</dt><dd class="big">${esc(usd(lo * trav))}</dd>`;
+    }
+    if (q.note) { $("#qNoteWrap").hidden = false; $("#qNote").textContent = q.note; }
     $("#loading").hidden = true; $("#quote").hidden = false;
   }).catch(fail);
   $("#qPrint").addEventListener("click", () => window.print());

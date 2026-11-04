@@ -52,7 +52,7 @@ begin
   end if;
   if q.id is null then return null; end if;
   return jsonb_build_object(
-    'customer_name', q.customer_name, 'origin', q.origin, 'destination', q.destination,
+    'quote_no', q.id, 'customer_name', q.customer_name, 'origin', q.origin, 'destination', q.destination,
     'from_city', q.from_city, 'to_city', q.to_city, 'travel_date', q.travel_date, 'date_label', q.date_label,
     'travelers', q.travelers, 'options', q.options, 'note', q.note, 'book_url', q.book_url,
     'prepared_name', q.prepared_name, 'created_at', q.created_at, 'expires_at', q.expires_at,
