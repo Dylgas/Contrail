@@ -6,13 +6,16 @@ const CFG = window.CONTRAIL_CONFIG || {};
 const SITE = new URL("../", location.href).href;           // the public Contrail site
 const STATUSES = ["New", "Scheduled", "Called", "Booked", "No answer", "Closed"];
 const OPEN = new Set(["New", "Scheduled", "No answer"]);
+const PHONE_LINE = "(989) 690-4469";
+const FN = (CFG.supabaseUrl || "") + "/functions/v1/";
+const GROK_CALLS = "https://console.x.ai/team/34e110fb-aa96-4ea6-895a-0a680b7de109/voice/agents/agent_cMaIBHcVY7fLBp0U?tab=conversations";
 
 const show = id => ["vNoConfig", "vAuth", "vNewPass", "vApp"].forEach(v => { $("#" + v).hidden = v !== id; });
 if (!CFG.supabaseUrl || !CFG.supabaseAnonKey || !window.supabase) { show("vNoConfig"); return; }
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}});
 
 /* ---------- helpers ---------- */
-const S = {me: null, profiles: [], calls: [], bookings: [], events: [], filter: "Open", q: "", calOff: 0, editing: null, editingEvent: null};
+const S = {me: null, profiles: [], calls: [], bookings: [], events: [], filter: "Open", q: "", cq: "", calOff: 0, editing: null, editingEvent: null};
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 const fmtDate = d => d ? new Date(d).toLocaleDateString("en-US", {month: "short", day: "numeric"}) : "—";
 const fmtDateY = d => d ? new Date(d).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric"}) : "—";
@@ -113,10 +116,15 @@ function openTab(name) {
   try { history.replaceState(null, "", "#" + name); } catch (e) {}
 }
 $$(".tab").forEach(t => t.addEventListener("click", () => openTab(t.dataset.tab)));
-const startTab = (location.hash || "").slice(1); if (["overview", "calls", "calendar", "bookings", "team"].includes(startTab)) openTab(startTab);
+const TABS = ["overview", "calls", "customers", "calendar", "bookings", "team"];
+const startTab = (location.hash || "").slice(1); if (TABS.includes(startTab)) openTab(startTab);
+// Links from phone alerts look like #call=123: open that request once the data is loaded.
+let pendingCall = (/^#call=(\d+)/.exec(location.hash) || [])[1] || null;
+function openPending() { if (!pendingCall || !S.calls.length) return; const id = pendingCall; pendingCall = null; openTab("calls"); openCall(id); }
+window.addEventListener("hashchange", () => { const m = /^#call=(\d+)/.exec(location.hash); if (m) { pendingCall = m[1]; openPending(); } });
 
 /* ---------- render ---------- */
-function render() { renderOverview(); renderCalls(); renderCal(); renderBookings(); renderTeam(); }
+function render() { renderOverview(); renderCalls(); renderCustomers(); renderCal(); renderBookings(); renderTeam(); renderAlerts(); openPending(); }
 
 function renderOverview() {
   const h = new Date().getHours(), me = S.profiles.find(p => p.id === S.me.id);
@@ -141,15 +149,72 @@ function renderOverview() {
 }
 
 function renderCalls() {
-  const chips = ["Open", "All", ...STATUSES];
+  const chips = ["Mine", "Due today", "Open", "All", ...STATUSES];
   $("#stChips").innerHTML = chips.map(c => `<button class="chip" type="button" data-st="${esc(c)}" aria-pressed="${S.filter === c}">${esc(c)}${c === "Open" ? "" : ""}</button>`).join("");
   const q = S.q.toLowerCase();
-  const rows = S.calls.filter(c => S.filter === "All" || (S.filter === "Open" ? OPEN.has(c.status) : c.status === S.filter))
-    .filter(c => !q || [c.name, c.phone, c.trip, c.email, c.notes, c.message].some(v => (v || "").toLowerCase().includes(q)));
+  const endToday = new Date(); endToday.setHours(23, 59, 59, 999);
+  const pass = c => S.filter === "All" ? true : S.filter === "Open" ? OPEN.has(c.status)
+    : S.filter === "Mine" ? c.assigned_to === S.me.id && OPEN.has(c.status)
+    : S.filter === "Due today" ? !!c.call_at && new Date(c.call_at) <= endToday && OPEN.has(c.status)
+    : c.status === S.filter;
+  let rows = S.calls.filter(pass).filter(c => !q || [c.name, c.phone, c.trip, c.email, c.notes, c.message].some(v => (v || "").toLowerCase().includes(q)));
+  if (S.filter === "Due today") rows = rows.slice().sort((a, b) => new Date(a.call_at) - new Date(b.call_at));
   $("#callRows").innerHTML = rows.map(c => `<tr data-call="${c.id}"><td class="n">${esc(fmtDate(c.created_at))}<br><span class="dim">${esc(c.source)}</span></td>
     <td>${esc(c.name)}</td><td class="n">${esc(c.phone)}</td><td class="hide-sm">${esc(c.trip || c.message || "—")}</td><td>${pill(c.status)}</td>
-    <td class="hide-sm">${esc(nameOf(c.assigned_to))}</td><td class="n">${c.call_at ? esc(fmtWhen(c.call_at)) : "—"}</td></tr>`).join("");
+    <td class="hide-sm">${c.assigned_to ? esc(nameOf(c.assigned_to)) : `<button class="mini" type="button" data-claim="${c.id}">Claim</button>`}</td><td class="n">${c.call_at ? esc(fmtWhen(c.call_at)) : "—"}</td></tr>`).join("");
   $("#callEmpty").hidden = rows.length > 0;
+  $("#callEmpty").textContent = S.filter === "Mine" ? "Nothing assigned to you right now. Claim a request to add it here."
+    : S.filter === "Due today" ? "No call-backs due today." : "No call requests match.";
+}
+
+/* ---------- claiming ---------- */
+async function claim(id, force) {
+  let q = db.from("call_requests").update({assigned_to: S.me.id}).eq("id", id);
+  if (!force) q = q.is("assigned_to", null);            // only if nobody got there first
+  const {data, error} = await q.select("id");
+  if (error) return toast(friendly(error));
+  await refresh();
+  if (!data || !data.length) { const c = S.calls.find(x => String(x.id) === String(id)); toast(`${nameOf(c && c.assigned_to)} already claimed this one.`); }
+  else toast("It's yours. It's in your queue under Mine.");
+  if (S.editing && String(S.editing) === String(id)) openCall(id);
+}
+
+/* ---------- customers (grouped by phone number) ---------- */
+const custKey = c => { const d = (c.phone || "").replace(/\D/g, ""); return d.length >= 7 ? "p" + d.slice(-10) : "n" + (c.name || "").trim().toLowerCase(); };
+function customers() {
+  const m = new Map();
+  for (const c of S.calls) { const k = custKey(c); if (!m.has(k)) m.set(k, []); m.get(k).push(c); }
+  return [...m.entries()].map(([key, calls]) => {
+    calls.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const last = calls[0];
+    return {key, calls, last, name: last.name, phone: last.phone, email: (calls.find(c => c.email) || {}).email || null,
+      trip: (calls.find(c => c.trip) || {}).trip || null, open: calls.some(c => OPEN.has(c.status)), booked: calls.some(c => c.status === "Booked")};
+  }).sort((a, b) => new Date(b.last.created_at) - new Date(a.last.created_at));
+}
+function renderCustomers() {
+  const q = S.cq.toLowerCase(), all = customers();
+  const list = all.filter(k => !q || [k.name, k.phone, k.trip, k.email, ...k.calls.map(c => c.notes)].some(v => (v || "").toLowerCase().includes(q)));
+  $("#custCount").textContent = `${all.length} ${all.length === 1 ? "customer" : "customers"}`;
+  $("#custRows").innerHTML = list.map(k => `<tr data-cust="${esc(k.key)}"><td>${esc(k.name)}</td><td class="n">${esc(k.phone)}</td><td class="hide-sm">${esc(k.trip || "—")}</td>
+    <td class="n">${k.calls.length}</td><td class="n">${esc(ago(k.last.created_at))}</td><td>${k.booked ? pill("Booked") : pill(k.last.status)}</td></tr>`).join("");
+  $("#custEmpty").hidden = list.length > 0;
+}
+$("#custSearch").addEventListener("input", e => { S.cq = e.target.value; renderCustomers(); });
+function openCustomer(key) {
+  const k = customers().find(x => x.key === key); if (!k) return;
+  closeDrawers();
+  $("#kTitle").textContent = k.name;
+  $("#kSub").textContent = `${k.calls.length} ${k.calls.length === 1 ? "request" : "requests"} · first contact ${fmtDateY(k.calls[k.calls.length - 1].created_at)}`;
+  const names = [...new Set(k.calls.map(c => c.name))];
+  $("#kFacts").innerHTML = [["Phone", k.phone], ["Email", k.email], ["Also went by", names.length > 1 ? names.slice(1).join(", ") : null], ["Latest trip", k.trip]]
+    .filter(([, v]) => v).map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join("");
+  const tel = (k.phone || "").replace(/[^\d+]/g, "");
+  $("#kQuick").innerHTML = tel ? `<a class="btn btn-line" href="tel:${esc(tel)}">Call ${esc(k.phone)}</a><a class="btn btn-line" href="sms:${esc(tel)}">Text</a>` : "";
+  $("#kReqs").innerHTML = k.calls.map(c => `<li><button type="button" data-call="${c.id}"><span>${esc(c.trip || c.message || "No trip details")}</span><span>${pill(c.status)}</span>
+    <span class="d">${esc(fmtDateY(c.created_at))} · ${esc(c.source)}${c.assigned_to ? " · " + esc(nameOf(c.assigned_to)) : ""}</span></button></li>`).join("");
+  const notes = k.calls.filter(c => c.notes).map(c => `${fmtDateY(c.created_at)} (${c.source})\n${c.notes}`);
+  $("#kNotes").textContent = notes.length ? notes.join("\n\n") : "No notes yet. Add notes from any of their requests.";
+  $("#scrim").hidden = false; $("#custDrawer").hidden = false; $("#kClose").focus();
 }
 $("#stChips").addEventListener("click", e => { const b = e.target.closest("[data-st]"); if (!b) return; S.filter = b.dataset.st; renderCalls(); });
 $("#callSearch").addEventListener("input", e => { S.q = e.target.value; renderCalls(); });
@@ -213,7 +278,7 @@ function tripDate(s) {
   if (!y) { const now = new Date(); y = now.getFullYear(); if (new Date(y, mo - 1, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y++; }
   return mo >= 1 && mo <= 12 && d >= 1 && d <= 31 ? [y, mo, d] : null;
 }
-function bookingLink(c) {
+function parseTrip(c) {
   const s = [c.trip, c.message].filter(Boolean).join(" ");
   const codes = [...new Set((s.match(/\b[A-Z]{3}\b/g) || []).filter(x => !["AND", "THE", "ONE", "WAY", "FOR", "AIR"].includes(x)))];
   if (codes.length < 2 && AIRPORTS) {        // fall back to city names, e.g. "Baltimore to Orlando"
@@ -225,10 +290,19 @@ function bookingLink(c) {
     }
     Object.values(best).sort((x, y) => x.at - y.at).forEach(b => { if (!codes.includes(b.k)) codes.push(b.k); });
   }
-  if (codes.length < 2) return SITE;
   const t = tripDate(c.trip || "") || tripDate(s);
+  return {o: codes[0] || null, d: codes[1] || null, t};
+}
+function bookingLink(c) {
+  const {o, d, t} = parseTrip(c);
+  if (!o || !d) return SITE;
   const date = t ? `-${t[0]}${String(t[1]).padStart(2, "0")}${String(t[2]).padStart(2, "0")}` : "";
-  return `${SITE}#${codes[0]}-${codes[1]}${date}`;
+  return `${SITE}#${o}-${d}${date}`;
+}
+const smsHref = (phone, body) => `sms:${(phone || "").replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(body)}`;
+function addNote(line) {   // logs what was sent to the customer; saved with the request when staff click Save
+  const stamp = new Date().toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});
+  const box = $("#cNotes"); box.value = (box.value.trim() ? box.value.trim() + "\n" : "") + `${stamp} · ${line}`;
 }
 function openCall(id) {
   const c = id ? S.calls.find(x => String(x.id) === String(id)) : null;
@@ -244,8 +318,25 @@ function openCall(id) {
   if (tl) tl.onclick = () => {   // opens the staff member's own Messages app with the booking link filled in
     const first = (c.name || "").trim().split(/\s+/)[0] || "there", link = bookingLink(c);
     const body = `Hi ${first}, it's Contrail. Here are the flights we found for your trip: ${link}\nReply here or call (989) 690-4469 if you have any questions.`;
-    tl.href = `sms:${c.phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(body)}`;
+    tl.href = smsHref(c.phone, body);
+    addNote("Texted the booking link");
+    toast("Opening Messages. A note was added; click Save to keep it.");
   };
+  if (c && c.source === "AI receptionist") {
+    $("#dQuick").insertAdjacentHTML("beforeend", `<a class="btn btn-line" href="${GROK_CALLS}" target="_blank" rel="noopener" title="Opens Alex's call log. Look for the call from ${esc(c.phone)} at ${esc(fmtTime(c.created_at))}.">Listen in Grok ↗</a>`);
+  }
+  const own = $("#dOwner");
+  if (!c) own.innerHTML = "";
+  else if (!c.assigned_to) own.innerHTML = `Nobody has this yet. <button class="mini" type="button" data-claim="${c.id}">Claim it</button>`;
+  else if (c.assigned_to === S.me.id) own.innerHTML = "This one is yours.";
+  else own.innerHTML = `${esc(nameOf(c.assigned_to))} has this. <button class="mini" type="button" data-claim="${c.id}" data-force="1">Take it over</button>`;
+  const dc = $("#dCust");
+  if (c) {
+    const k = customers().find(x => x.key === custKey(c));
+    dc.hidden = !k || k.calls.length < 2;
+    if (k && k.calls.length > 1) dc.innerHTML = `${esc(c.name)} has reached us ${k.calls.length} times. <button class="link" type="button" data-cust="${esc(k.key)}">See all</button>`;
+  } else dc.hidden = true;
+  setupQuote(c);
   $("#cStatus").value = c ? c.status : "New";
   $("#cAssign").innerHTML = `<option value="">Nobody yet</option>` + S.profiles.map(p => `<option value="${p.id}">${esc(p.full_name || p.email)}</option>`).join("");
   $("#cAssign").value = c ? (c.assigned_to || "") : S.me.id;
@@ -263,14 +354,17 @@ function openCall(id) {
   };
   const lb = $("#linkBox"); if (lb) { lb.hidden = true; lb.innerHTML = ""; }
 }
-function closeDrawers() { $("#scrim").hidden = true; $("#drawer").hidden = true; $("#evDrawer").hidden = true; S.editing = null; S.editingEvent = null; }
+function closeDrawers() { $("#scrim").hidden = true; $("#drawer").hidden = true; $("#evDrawer").hidden = true; $("#custDrawer").hidden = true; S.editing = null; S.editingEvent = null; }
 document.addEventListener("click", e => {
-  const c = e.target.closest("[data-call]"); if (c && !c.closest("#drawer")) return openCall(c.dataset.call);
+  const cl = e.target.closest("[data-claim]"); if (cl) { e.stopPropagation(); return claim(cl.dataset.claim, cl.dataset.force === "1"); }
+  if (e.target.closest("[data-alerts-on]")) return alertsOn();
+  const k = e.target.closest("[data-cust]"); if (k) return openCustomer(k.dataset.cust);
+  const c = e.target.closest("[data-call]"); if (c && !c.closest("#drawer")) { if (c.closest("#custDrawer")) closeDrawers(); return openCall(c.dataset.call); }
   const ev = e.target.closest("[data-event]"); if (ev) return openEvent(ev.dataset.event);
   if (e.target.closest("[data-new-call]")) openCall(null);
 });
 $("#dClose").addEventListener("click", closeDrawers); $("#cCancel").addEventListener("click", closeDrawers); $("#scrim").addEventListener("click", closeDrawers);
-$("#eClose").addEventListener("click", closeDrawers);
+$("#eClose").addEventListener("click", closeDrawers); $("#kClose").addEventListener("click", closeDrawers);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawers(); });
 
 $("#fCall").addEventListener("submit", async e => {
@@ -292,6 +386,115 @@ $("#fCall").addEventListener("submit", async e => {
   if (res.error) return say($("#cMsg"), friendly(res.error), "bad");
   closeDrawers(); toast("Saved."); refresh();
 });
+
+/* ---------- quote builder ---------- */
+const Q = {res: null, call: null};
+function setupQuote(c) {
+  Q.res = null; Q.call = c;
+  $("#qBox").hidden = !c; $("#qBox").open = false;
+  $("#qOpts").innerHTML = ""; $("#qActs").hidden = true; $("#qPreview").hidden = true; say($("#qMsg"), "");
+  if (!c) return;
+  const {o, d, t} = parseTrip(c);
+  $("#qFrom").value = o || ""; $("#qTo").value = d || "";
+  $("#qDate").value = t ? `${t[0]}-${String(t[1]).padStart(2, "0")}-${String(t[2]).padStart(2, "0")}` : "";
+}
+function quoteText() {
+  const c = Q.call, r = Q.res; if (!c || !r) return "";
+  const picked = [...$$("#qOpts input:checked")].map(i => r.options[+i.value]);
+  const first = (c.name || "").trim().split(/\s+/)[0] || "there";
+  const lines = picked.map(o => `• ${o.airline} ${o.flights}: ${o.dep} → ${o.arr}, ${o.stops ? "1 stop in " + o.via : "nonstop"}`);
+  return `Hi ${first}, it's Contrail. Flights we found for ${r.from_city} → ${r.to_city} on ${r.date}:\n${lines.join("\n")}\n` +
+    `See live prices and book: ${r.contrail_link}\nThese are based on airline schedules, so we'll confirm before you book. Questions? Call ${PHONE_LINE}.`;
+}
+function refreshQuote() {
+  const picked = $$("#qOpts input:checked").length;
+  $("#qActs").hidden = !picked;
+  const t = quoteText(); $("#qText").href = Q.call ? smsHref(Q.call.phone, t) : "#";
+  $("#qPreview").hidden = !picked; $("#qPreview").textContent = t;
+}
+$("#qFind").addEventListener("click", async () => {
+  const from = $("#qFrom").value.trim(), to = $("#qTo").value.trim(), date = $("#qDate").value;
+  if (!from || !to || !date) return say($("#qMsg"), "Add where they're flying from, to, and the date.", "bad");
+  say($("#qMsg"), "Looking up flights…"); $("#qOpts").innerHTML = ""; $("#qActs").hidden = true; $("#qPreview").hidden = true;
+  try {
+    const r = await fetch(`${FN}flight-lookup?${new URLSearchParams({from, to, date})}`).then(x => x.json());
+    if (!r.ok) return say($("#qMsg"), r.say || "Couldn't look that up.", "bad");
+    Q.res = r;
+    if (!r.options.length) return say($("#qMsg"), `No regular flights predicted ${r.from_city} → ${r.to_city} on ${r.date}. Try a nearby airport or another day.`, "bad");
+    say($("#qMsg"), `${r.from_city} → ${r.to_city}, ${r.date}. Predictions from past schedules.`, "ok");
+    $("#qOpts").innerHTML = r.options.map((o, i) => `<li><label><input type="checkbox" value="${i}" ${i < 3 ? "checked" : ""}>
+      <span><b style="font-weight:500">${esc(o.airline)} ${esc(o.flights)}</b> · ${esc(o.dep)} → ${esc(o.arr)}</span>
+      <span class="o-conf">${esc(o.word)}<br>${o.conf}%</span><span class="o-sub">${o.stops ? "1 stop in " + esc(o.via) : "Nonstop"}</span></label></li>`).join("");
+    refreshQuote();
+  } catch (e) { say($("#qMsg"), friendly(e), "bad"); }
+});
+$("#qOpts").addEventListener("change", refreshQuote);
+$("#qText").addEventListener("click", e => {
+  if (!$$("#qOpts input:checked").length) { e.preventDefault(); return; }
+  refreshQuote(); addNote(`Texted a quote: ${Q.res.from}→${Q.res.to} ${Q.res.date} (${$$("#qOpts input:checked").length} options)`);
+  toast("Opening Messages. A note was added; click Save to keep it.");
+});
+$("#qCopy").addEventListener("click", async () => {
+  const t = quoteText();
+  try { await navigator.clipboard.writeText(t); toast("Message copied."); } catch (e) { toast("Select the message below and copy it."); }
+  addNote(`Copied a quote: ${Q.res.from}→${Q.res.to} ${Q.res.date}`);
+});
+
+/* ---------- phone alerts ---------- */
+const pushOK = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+let swReg = null;
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(r => { swReg = r; renderAlerts(); }).catch(() => {});
+  navigator.serviceWorker.addEventListener("message", e => { const u = e.data && e.data.open; if (u) { const m = /#call=(\d+)/.exec(u); if (m) { pendingCall = m[1]; openPending(); } } });
+}
+const b64ToU8 = b => { const s = atob((b + "=".repeat((4 - b.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(s, ch => ch.charCodeAt(0)); };
+async function currentSub() { try { return swReg ? await swReg.pushManager.getSubscription() : null; } catch (e) { return null; } }
+async function renderAlerts() {
+  if (!S.me) return;
+  const sub = await currentSub(), on = !!sub && Notification.permission === "granted";
+  const blocked = pushOK() && Notification.permission === "denied";
+  const needInstall = isIOS && !standalone();
+  $("#alertsBtn").hidden = on; $("#alertsTest").hidden = !on; $("#alertsOff").hidden = !on;
+  $("#alertState").textContent = !pushOK() && !needInstall ? "This browser can't show alerts. Try Chrome, Edge or Safari." :
+    needInstall ? "On iPhone, add Contrail to your Home Screen first (steps below), then turn on alerts from there." :
+    blocked ? "Alerts are blocked for this site. Allow notifications in your browser settings, then try again." :
+    on ? "Alerts are on for this device." : "Get a notification on this device for every new call request.";
+  let dismissed = false; try { dismissed = localStorage.getItem("contrail-alerts-banner") === "hide"; } catch (e) {}
+  $("#alertBanner").hidden = on || blocked || dismissed || (!pushOK() && !needInstall);
+  $("#alertBannerText").textContent = needInstall ? "Want phone alerts? On iPhone, add Contrail to your Home Screen first (Share → Add to Home Screen)." : "Get a phone alert the moment someone asks for a call back.";
+}
+async function alertsOn() {
+  const m = $("#alertMsg");
+  if (isIOS && !standalone()) { openTab("team"); return say(m, "On iPhone: Share → Add to Home Screen, open Contrail from your home screen, then tap Turn on alerts.", "bad"); }
+  if (!pushOK()) return say(m, "This browser can't show alerts.", "bad");
+  try {
+    say(m, "Turning on alerts…");
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { renderAlerts(); return say(m, "Notifications weren't allowed. You can allow them in your browser settings.", "bad"); }
+    if (!swReg) swReg = await navigator.serviceWorker.register("sw.js");
+    await navigator.serviceWorker.ready;
+    const {publicKey} = await fetch(FN + "push-notify?action=key").then(r => r.json());
+    const sub = (await swReg.pushManager.getSubscription()) || await swReg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64ToU8(publicKey)});
+    const j = sub.toJSON();
+    const {error} = await db.from("push_subscriptions").upsert({user_id: S.me.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 300)}, {onConflict: "endpoint"});
+    if (error) throw error;
+    say(m, "Alerts are on. Sending a test…", "ok"); await sendTest(); renderAlerts();
+  } catch (e) { say(m, friendly(e), "bad"); }
+}
+async function sendTest() {
+  const {data} = await db.auth.getSession();
+  const r = await fetch(FN + "push-notify?action=test", {method: "POST", headers: {Authorization: "Bearer " + (data.session && data.session.access_token)}}).then(x => x.json()).catch(() => ({}));
+  say($("#alertMsg"), r.sent ? "Test sent. You should see it in a few seconds." : "Couldn't send a test. Try turning alerts off and on.", r.sent ? "ok" : "bad");
+}
+$("#alertsTest").addEventListener("click", sendTest);
+$("#alertsOff").addEventListener("click", async () => {
+  const sub = await currentSub();
+  if (sub) { await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint); await sub.unsubscribe().catch(() => {}); }
+  say($("#alertMsg"), "Alerts are off on this device.", "ok"); renderAlerts();
+});
+$("#alertBanner").addEventListener("dblclick", () => { try { localStorage.setItem("contrail-alerts-banner", "hide"); } catch (e) {} renderAlerts(); });
 
 /* ---------- event drawer ---------- */
 function openEvent(id) {

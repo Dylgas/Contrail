@@ -165,6 +165,12 @@ async function lookup(fromQ: string, toQ: string, dateQ: string, retQ?: string) 
 
   const day = `${DOW[wd(t)]}, ${MONL[t.m - 1]} ${t.d}, ${t.y}`;
   const city = (c: string) => (AP[c]?.c ? `${AP[c].c} (${c})` : c);
+  const options = [
+    ...nonstops.slice(0, 5).sort((a, b) => a.dep - b.dep).map((l) => ({ airline: name(l.c), flights: l.fn, stops: 0, via: null,
+      dep: clock(l.dep), arr: clock(l.arr) + (l.nextDay ? " (+1 day)" : ""), conf: l.conf, word: word(l.conf) })),
+    ...conns.slice(0, nonstops.length ? 2 : 4).map((x) => ({ airline: name(x.a.c), flights: `${x.a.fn} + ${x.b.fn}`, stops: 1, via: x.hub,
+      dep: clock(x.a.dep), arr: clock(x.b.arr), conf: x.conf, word: word(x.conf) })),
+  ];
   const lines = [
     ...nonstops.slice(0, 5).sort((a, b) => a.dep - b.dep).map((l) => `${name(l.c)} flight ${l.fn}, nonstop, leaves ${clock(l.dep)}, arrives ${clock(l.arr)}${l.nextDay ? " the next day" : ""}: ${word(l.conf)} to run (${l.conf}%).`),
     ...conns.slice(0, nonstops.length ? 2 : 4).map((x) => `${name(x.a.c)} flights ${x.a.fn} and ${x.b.fn}, one stop in ${city(x.hub)}, leaves ${clock(x.a.dep)}, arrives ${clock(x.b.arr)}: ${word(x.conf)} (${x.conf}%).`),
@@ -172,7 +178,7 @@ async function lookup(fromQ: string, toQ: string, dateQ: string, retQ?: string) 
   const link = `https://www.aviasales.com/search/${o}${ddmm(t)}${d}${r ? ddmm(r) : ""}1?marker=${MARKER}`;
   const route = `${SITE}#${o}-${d}-${t.y}${String(t.m).padStart(2, "0")}${String(t.d).padStart(2, "0")}`;
   return {
-    ok: true, from: o, to: d, date: day,
+    ok: true, from: o, to: d, date: day, from_city: AP[o]?.c || o, to_city: AP[d]?.c || d, options,
     say: lines.length
       ? `Flights Contrail predicts from ${city(o)} to ${city(d)} on ${day}, based on what airlines flew in past months (predictions, not guarantees; prices are not included):\n- ${lines.join("\n- ")}`
       : `Contrail doesn't see a regular flight from ${city(o)} to ${city(d)} on ${day}. Offer a nearby airport or a different day, or have a specialist call back.`,
@@ -181,12 +187,16 @@ async function lookup(fromQ: string, toQ: string, dateQ: string, retQ?: string) 
   };
 }
 
+const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "content-type" };
+const json = (v: unknown, status = 200) => Response.json(v, { status, headers: CORS });
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   const u = new URL(req.url);
   let q: Record<string, any> = Object.fromEntries(u.searchParams);
   if (req.method === "POST") { try { q = { ...q, ...(await req.json()) }; } catch { /* use query */ } }
   const from = q.from || q.origin || q.trip_from, to = q.to || q.destination || q.trip_to, date = q.date || q.departure_date;
-  if (!from || !to || !date) return Response.json({ ok: false, say: "Send from, to and date (for example from=BWI, to=Orlando, date=2026-12-04)." }, { status: 400 });
-  try { return Response.json(await lookup(String(from), String(to), String(date), q.return_date ? String(q.return_date) : undefined)); }
-  catch (e) { console.error(e); return Response.json({ ok: false, say: "The flight lookup isn't available right now. Take the caller's details and have a specialist call back." }, { status: 200 }); }
+  if (!from || !to || !date) return json({ ok: false, say: "Send from, to and date (for example from=BWI, to=Orlando, date=2026-12-04)." }, 400);
+  try { return json(await lookup(String(from), String(to), String(date), q.return_date ? String(q.return_date) : undefined)); }
+  catch (e) { console.error(e); return json({ ok: false, say: "The flight lookup isn't available right now. Take the caller's details and have a specialist call back." }); }
 });

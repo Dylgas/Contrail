@@ -7,6 +7,13 @@
 <title>Contrail Staff</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contrail">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect width='14' height='14' rx='3' fill='%230a0a0a'/%3E%3Cpath d='M3 11 L11 3 L8.5 11 L7 8 Z' fill='white'/%3E%3C/svg%3E">
 <style>
 /* Layout: black top bar with tabs; white working sheet with rounded top corners; cards only for the few things that are separate objects */
@@ -151,6 +158,34 @@ td .dim{color:var(--soft);font-size:13px}
 .linkbox{margin:10px 0 4px;padding:10px 12px;border-radius:10px;background:rgba(127,127,127,.12);font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:4px}
 .linkbox[hidden]{display:none}
 .linkbox a{word-break:break-all;color:inherit;font-weight:500}
+
+/* customers, claim, quote builder, alerts */
+.mini{border:1px solid var(--hair);background:#fff;border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;color:var(--ink);white-space:nowrap}
+.mini:hover{border-color:var(--ink)}
+.owner{font-size:13px;color:var(--soft);align-self:center}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:var(--mist);border-radius:16px;padding:14px 18px;margin-top:24px}
+.banner p{margin:0;font-size:14px}
+.quote{margin-top:22px;border-top:1px solid var(--hair);padding-top:16px}
+.quote summary{cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.quote summary::-webkit-details-marker{display:none}
+.quote summary::after{content:"+";color:var(--soft);font-size:20px;line-height:1}
+.quote[open] summary::after{content:"−"}
+.row3{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:10px}
+.opts{list-style:none;margin:14px 0 0;padding:0;border-top:1px solid var(--hair)}
+.opts li{border-bottom:1px solid var(--hair)}
+.opts label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 2px;cursor:pointer;font-size:14px}
+.opts input{width:18px;height:18px;accent-color:var(--ink)}
+.opts .o-sub{grid-column:2;color:var(--soft);font-size:13px}
+.opts .o-conf{grid-row:1 / span 2;grid-column:3;font-size:12px;text-align:right;color:var(--soft)}
+.cust-reqs{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--hair)}
+.cust-reqs li{border-bottom:1px solid var(--hair)}
+.cust-reqs button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:12px 4px;font-size:14px}
+.cust-reqs button:hover{background:var(--mist)}
+.cust-reqs .d{color:var(--soft);font-size:13px}
+#qPreview{white-space:pre-wrap}
+.note-log{white-space:pre-wrap;font-size:13px;color:var(--ink);background:var(--mist);border-radius:12px;padding:12px 14px;margin-top:10px;max-height:240px;overflow:auto}
+.devlist{margin:10px 0 0;padding-left:18px;font-size:14px;color:var(--soft)}
+@media (max-width:520px){.row3{grid-template-columns:1fr 1fr}.row3 .field:last-child{grid-column:1 / -1}}
 </style>
 </head>
 <body>
@@ -201,6 +236,7 @@ td .dim{color:var(--soft);font-size:13px}
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
       <button class="tab" role="tab" data-tab="calls">Call requests<span class="badge" id="newBadge" hidden></span></button>
+      <button class="tab" role="tab" data-tab="customers">Customers</button>
       <button class="tab" role="tab" data-tab="calendar">Calendar</button>
       <button class="tab" role="tab" data-tab="bookings">Bookings</button>
       <button class="tab" role="tab" data-tab="team">Team</button>
@@ -212,6 +248,7 @@ td .dim{color:var(--soft);font-size:13px}
     <section data-view="overview">
       <div class="head"><div><h1 id="hello">Good morning</h1><p class="sub" id="helloSub"></p></div>
         <button class="btn btn-black" type="button" data-new-call>Add a call request</button></div>
+      <div class="banner" id="alertBanner" hidden><p id="alertBannerText">Get a phone alert the moment someone asks for a call back.</p><button class="btn btn-black" type="button" data-alerts-on>Turn on alerts</button></div>
       <ul class="figs">
         <li><b id="kNew">—</b><span>New requests waiting</span></li>
         <li><b id="kToday">—</b><span>Calls scheduled today</span></li>
@@ -235,6 +272,16 @@ td .dim{color:var(--soft);font-size:13px}
         <thead><tr><th>Received</th><th>Name</th><th>Phone</th><th class="hide-sm">Trip</th><th>Status</th><th class="hide-sm">Assigned</th><th>Call</th></tr></thead>
         <tbody id="callRows"></tbody></table></div>
       <p class="empty" id="callEmpty" hidden>No call requests match.</p>
+    </section>
+
+    <section data-view="customers" hidden>
+      <div class="head"><div><h1>Customers</h1><p class="sub">Everyone who has reached Contrail, grouped by phone number. Click someone to see all their requests and notes.</p></div></div>
+      <div class="tools"><span class="owner" id="custCount"></span>
+        <input class="search" id="custSearch" type="search" placeholder="Search name, phone or trip" aria-label="Search customers"></div>
+      <div class="tw"><table>
+        <thead><tr><th>Name</th><th>Phone</th><th class="hide-sm">Latest trip</th><th>Requests</th><th>Last contact</th><th>Status</th></tr></thead>
+        <tbody id="custRows"></tbody></table></div>
+      <p class="empty" id="custEmpty" hidden>No customers match.</p>
     </section>
 
     <section data-view="calendar" hidden>
@@ -263,6 +310,10 @@ td .dim{color:var(--soft);font-size:13px}
         <form id="fName" novalidate><h2>Your name</h2><p class="sub">This is what teammates see when you're assigned a call.</p>
           <div class="field"><label for="myName">Display name</label><input id="myName" maxlength="80"></div>
           <div class="acts"><button class="btn btn-black" type="submit">Save name</button></div><p class="msg" id="nameMsg" role="status"></p></form>
+        <div><h2>Phone alerts</h2><p class="sub" id="alertState">Get a notification on this device for every new call request.</p>
+          <div class="acts"><button class="btn btn-black" type="button" data-alerts-on id="alertsBtn">Turn on alerts</button><button class="btn btn-line" type="button" id="alertsTest" hidden>Send a test</button><button class="btn btn-line" type="button" id="alertsOff" hidden>Turn off on this device</button></div>
+          <p class="msg" id="alertMsg" role="status"></p>
+          <p class="sub" style="font-size:13px">On iPhone: open this page in Safari, tap Share → <b>Add to Home Screen</b>, open Contrail from your home screen, then turn on alerts. On Android and computers, it works right in the browser.</p></div>
         <div><h2>Adding a teammate</h2><p class="sub">Only the owner can do this, in Supabase.</p>
           <ol class="steps"><li>Open your project at supabase.com and go to <b>Authentication → Users</b>.</li>
             <li>Click <b>Add user → Send invitation</b> and enter their email. They get an email to set a password.</li>
@@ -290,6 +341,22 @@ td .dim{color:var(--soft);font-size:13px}
     <dl class="facts" id="dFacts"></dl>
     <div class="acts" id="dQuick"></div>
     <div class="linkbox" id="linkBox" hidden></div>
+    <p class="owner" id="dOwner" style="margin:12px 0 0"></p>
+    <p class="sub" id="dCust" style="font-size:14px;margin-top:6px" hidden></p>
+    <details class="quote" id="qBox">
+      <summary>Quote flights</summary>
+      <p class="sub" style="font-size:13px">Look up the flights Contrail predicts, pick the ones to offer, and text them with the booking link.</p>
+      <div class="row3">
+        <div class="field"><label for="qFrom">From</label><input id="qFrom" maxlength="40" placeholder="BWI"></div>
+        <div class="field"><label for="qTo">To</label><input id="qTo" maxlength="40" placeholder="Orlando"></div>
+        <div class="field"><label for="qDate">Date</label><input id="qDate" type="date"></div>
+      </div>
+      <div class="acts" style="margin-top:12px"><button class="btn btn-line" type="button" id="qFind">Find flights</button></div>
+      <p class="msg" id="qMsg" role="status"></p>
+      <ul class="opts" id="qOpts"></ul>
+      <div class="acts" id="qActs" hidden><a class="btn btn-black" id="qText" href="#">Text these</a><button class="btn btn-line" type="button" id="qCopy">Copy message</button></div>
+      <div class="linkbox" id="qPreview" hidden></div>
+    </details>
     <div class="row2">
       <div class="field"><label for="cStatus">Status</label><select id="cStatus"><option>New</option><option>Scheduled</option><option>Called</option><option>Booked</option><option>No answer</option><option>Closed</option></select></div>
       <div class="field"><label for="cAssign">Assigned to</label><select id="cAssign"></select></div>
@@ -300,6 +367,19 @@ td .dim{color:var(--soft);font-size:13px}
     <div class="acts"><button class="btn btn-black" type="submit" id="cSave">Save</button><button class="btn btn-line" type="button" id="cCancel">Cancel</button></div>
     <p class="msg" id="cMsg" role="status"></p>
   </form>
+</aside>
+
+<!-- customer drawer -->
+<aside class="drawer" id="custDrawer" hidden aria-modal="true" role="dialog" aria-labelledby="kTitle">
+  <button class="x" type="button" id="kClose" aria-label="Close">×</button>
+  <h2 id="kTitle" style="font-size:24px;font-weight:400;letter-spacing:-.015em">Customer</h2>
+  <p class="sub" id="kSub"></p>
+  <dl class="facts" id="kFacts"></dl>
+  <div class="acts" id="kQuick"></div>
+  <h2 style="margin-top:28px">Requests</h2>
+  <ul class="cust-reqs" id="kReqs"></ul>
+  <h2 style="margin-top:28px">Notes</h2>
+  <div class="note-log" id="kNotes"></div>
 </aside>
 
 <!-- event drawer -->
@@ -319,6 +399,6 @@ td .dim{color:var(--soft);font-size:13px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="../config.js?v=2"></script>
-<script src="staff.js?v=3"></script>
+<script src="staff.js?v=4"></script>
 </body>
 </html>
