@@ -327,7 +327,11 @@ function openCall(id) {
   const tl = $("#textLink");
   if (tl) tl.onclick = () => {   // opens the staff member's own Messages app with the booking link filled in
     const first = (c.name || "").trim().split(/\s+/)[0] || "there", link = bookingLink(c);
-    const body = `Hi ${first}, it's Contrail. Here are the flights we found for your trip: ${link}\nReply here or call (989) 690-4469 if you have any questions.`;
+    const {o, d} = parseTrip(c);
+    // Only say "your trip" when the link really opens their route; this button never claims we found specific flights.
+    const body = link === SITE
+      ? `Hi ${first}, it's Contrail, following up on your call. You can search flights and live prices here: ${link}\nReply here or call ${PHONE_LINE} and we'll help you find the right one.`
+      : `Hi ${first}, it's Contrail, following up on your trip (${o} to ${d}). You can see flight options and live prices here: ${link}\nReply here or call ${PHONE_LINE} if you have any questions.`;
     tl.href = smsHref(c.phone, body);
     addNote("Texted the booking link");
     toast("Opening Messages. A note was added; click Save to keep it.");
