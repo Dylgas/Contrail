@@ -115,7 +115,9 @@ async function readBody(req: Request): Promise<unknown> {
 }
 
 Deno.serve(async (req) => {
-  const ok = await keyOk(new URL(req.url).searchParams.get("key") || "");
+  // The secret can come as ?key=... (Retell, My AI Front Desk) or as "Authorization: Bearer ..." (Grok voice agents).
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  const ok = await keyOk(new URL(req.url).searchParams.get("key") || bearer);
   if (!ok) return reply({ error: "Wrong or missing key." }, 401);
   if (req.method === "GET") return reply("Connected. Contrail is ready to receive calls from your AI receptionist.");
   if (req.method !== "POST") return reply({ error: "Send a POST." }, 405);
