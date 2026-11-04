@@ -111,13 +111,21 @@ async function start() {
 
 /* ---------- tabs ---------- */
 function openTab(name) {
+  const prev = S.tab; S.tab = name;
   $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  $$(".bnav [data-tab]").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  const more = $(".bnav [data-more]"); if (more) more.setAttribute("aria-selected", String(name === "bookings" || name === "team"));
   $$("[data-view]").forEach(v => { v.hidden = v.dataset.view !== name; });
-  try { history.replaceState(null, "", "#" + name); } catch (e) {}
+  $("#fab").hidden = !["overview", "calls", "customers", "calendar"].includes(name);
+  $("#fab").setAttribute("aria-label", name === "calendar" ? "Add an event" : "Add a call request");
+  try { history.replaceState(null, "", "#" + name); localStorage.setItem("contrail-tab", name); } catch (e) {}
+  if (prev && prev !== name) window.scrollTo({top: 0});
 }
-$$(".tab").forEach(t => t.addEventListener("click", () => openTab(t.dataset.tab)));
+$$(".tab, .bnav [data-tab]").forEach(t => t.addEventListener("click", () => { if (S.tab === t.dataset.tab) window.scrollTo({top: 0, behavior: "smooth"}); openTab(t.dataset.tab); }));
 const TABS = ["overview", "calls", "customers", "calendar", "bookings", "team"];
-const startTab = (location.hash || "").slice(1); if (TABS.includes(startTab)) openTab(startTab);
+let startTab = (location.hash || "").slice(1);
+if (!TABS.includes(startTab)) { try { startTab = localStorage.getItem("contrail-tab") || ""; } catch (e) {} }
+openTab(TABS.includes(startTab) ? startTab : "overview");
 // Links from phone alerts look like #call=123: open that request once the data is loaded.
 let pendingCall = (/^#call=(\d+)/.exec(location.hash) || [])[1] || null;
 function openPending() { if (!pendingCall || !S.calls.length) return; const id = pendingCall; pendingCall = null; openTab("calls"); openCall(id); }
@@ -137,6 +145,8 @@ function renderOverview() {
   $("#kBookings").textContent = monthB.length; $("#kComm").textContent = usd(monthB.reduce((a, b) => a + Number(b.commission_usd || 0), 0));
   $("#helloSub").textContent = news.length ? `${news.length} ${news.length === 1 ? "person is" : "people are"} waiting for a call back.` : "Nobody is waiting for a call back right now.";
   const badge = $("#newBadge"); badge.hidden = !news.length; badge.textContent = news.length;
+  const dot = $("#navDot"); dot.hidden = !news.length; dot.textContent = news.length > 99 ? "99+" : news.length;
+  try { if (navigator.setAppBadge) news.length ? navigator.setAppBadge(news.length) : navigator.clearAppBadge(); } catch (e) {}
   const need = news.slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).slice(0, 8);
   $("#needList").innerHTML = need.length ? need.map(c => `<li><button type="button" data-call="${c.id}"><span class="t">${esc(c.name)}</span><span class="s">${esc(c.trip || c.message || c.phone)}</span><span class="r">${esc(ago(c.created_at))}<br>${esc(c.source)}</span></button></li>`).join("")
     : `<li><p class="empty">All caught up.</p></li>`;
@@ -175,7 +185,7 @@ async function claim(id, force) {
   if (error) return toast(friendly(error));
   await refresh();
   if (!data || !data.length) { const c = S.calls.find(x => String(x.id) === String(id)); toast(`${nameOf(c && c.assigned_to)} already claimed this one.`); }
-  else toast("It's yours. It's in your queue under Mine.");
+  else { haptic(); toast("It's yours. It's in your queue under Mine."); }
   if (S.editing && String(S.editing) === String(id)) openCall(id);
 }
 
@@ -343,7 +353,8 @@ function openCall(id) {
   $("#cCallAt").value = c ? toLocalInput(c.call_at) : "";
   $("#cNotes").value = c ? (c.notes || "") : "";
   say($("#cMsg"), "");
-  $("#scrim").hidden = false; $("#drawer").hidden = false; (c ? $("#cStatus") : $("#cName")).focus();
+  SHEETS.forEach(id => { if (id !== "#drawer") $(id).hidden = true; });
+  $("#scrim").hidden = false; $("#drawer").hidden = false; $("#drawer").scrollTop = 0; if (innerWidth > 760 || !c) (c ? $("#cStatus") : $("#cName")).focus({preventScroll: true});
   const cl = $("#copyLink"); if (cl) cl.onclick = async () => {
     const link = bookingLink(c), box = $("#linkBox");
     box.hidden = false;
@@ -354,7 +365,9 @@ function openCall(id) {
   };
   const lb = $("#linkBox"); if (lb) { lb.hidden = true; lb.innerHTML = ""; }
 }
-function closeDrawers() { $("#scrim").hidden = true; $("#drawer").hidden = true; $("#evDrawer").hidden = true; $("#custDrawer").hidden = true; S.editing = null; S.editingEvent = null; }
+const SHEETS = ["#drawer", "#evDrawer", "#custDrawer", "#moreSheet", "#iosSheet"];
+function closeDrawers() { $("#scrim").hidden = true; SHEETS.forEach(id => { const d = $(id); d.hidden = true; d.style.transform = ""; }); S.editing = null; S.editingEvent = null; }
+function openSheet(id) { closeDrawers(); $("#scrim").hidden = false; const d = $(id); d.hidden = false; d.scrollTop = 0; }
 document.addEventListener("click", e => {
   const cl = e.target.closest("[data-claim]"); if (cl) { e.stopPropagation(); return claim(cl.dataset.claim, cl.dataset.force === "1"); }
   if (e.target.closest("[data-alerts-on]")) return alertsOn();
@@ -365,6 +378,7 @@ document.addEventListener("click", e => {
 });
 $("#dClose").addEventListener("click", closeDrawers); $("#cCancel").addEventListener("click", closeDrawers); $("#scrim").addEventListener("click", closeDrawers);
 $("#eClose").addEventListener("click", closeDrawers); $("#kClose").addEventListener("click", closeDrawers);
+$("#mClose").addEventListener("click", closeDrawers); $("#iClose").addEventListener("click", closeDrawers);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawers(); });
 
 $("#fCall").addEventListener("submit", async e => {
@@ -384,7 +398,7 @@ $("#fCall").addEventListener("submit", async e => {
   }
   btn.disabled = false;
   if (res.error) return say($("#cMsg"), friendly(res.error), "bad");
-  closeDrawers(); toast("Saved."); refresh();
+  closeDrawers(); haptic(); toast("Saved."); refresh();
 });
 
 /* ---------- quote builder ---------- */
@@ -467,7 +481,7 @@ async function renderAlerts() {
 }
 async function alertsOn() {
   const m = $("#alertMsg");
-  if (isIOS && !standalone()) { openTab("team"); return say(m, "On iPhone: Share → Add to Home Screen, open Contrail from your home screen, then tap Turn on alerts.", "bad"); }
+  if (isIOS && !standalone()) { openSheet("#iosSheet"); return; }
   if (!pushOK()) return say(m, "This browser can't show alerts.", "bad");
   try {
     say(m, "Turning on alerts…");
@@ -502,7 +516,8 @@ function openEvent(id) {
   $("#eTitle").textContent = ev ? "Edit event" : "Add an event";
   $("#eName").value = ev ? ev.title : ""; $("#eAt").value = ev ? toLocalInput(ev.starts_at) : ""; $("#eDetail").value = ev ? (ev.detail || "") : "";
   $("#eDelete").hidden = !ev; say($("#eMsg"), "");
-  $("#scrim").hidden = false; $("#evDrawer").hidden = false; $("#eName").focus();
+  SHEETS.forEach(id => { if (id !== "#evDrawer") $(id).hidden = true; });
+  $("#scrim").hidden = false; $("#evDrawer").hidden = false; $("#eName").focus({preventScroll: true});
 }
 $("#addEvent").addEventListener("click", () => openEvent(null));
 $("#fEvent").addEventListener("submit", async e => {
@@ -520,4 +535,65 @@ $("#eDelete").addEventListener("click", async () => {
   if (error) return say($("#eMsg"), friendly(error), "bad");
   closeDrawers(); toast("Event deleted."); refresh();
 });
+
+/* ---------- app feel: More sheet, + button, gestures, install, offline ---------- */
+const haptic = () => { try { navigator.vibrate && navigator.vibrate(8); } catch (e) {} };
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-more]")) { $("#mName").textContent = $("#meName").textContent || "More"; $("#mEmail").textContent = S.me ? S.me.email : ""; openSheet("#moreSheet"); return; }
+  const g = e.target.closest("[data-go]"); if (g) { closeDrawers(); openTab(g.dataset.go); return; }
+  if (e.target.closest("[data-install]")) { install(); return; }
+});
+$("#mSignOut").addEventListener("click", () => { closeDrawers(); db.auth.signOut(); });
+$("#fab").addEventListener("click", () => { haptic(); S.tab === "calendar" ? openEvent(null) : openCall(null); });
+
+// Swipe a sheet down to close it (phones).
+SHEETS.forEach(id => {
+  const d = $(id); let y0 = null, dy = 0;
+  d.addEventListener("touchstart", e => { if (innerWidth > 760 || d.scrollTop > 0 || e.target.closest("input,textarea,select")) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, {passive: true});
+  d.addEventListener("touchmove", e => { if (y0 == null) return; dy = e.touches[0].clientY - y0; if (dy > 0) { d.classList.add("dragging"); d.style.transform = `translateY(${dy}px)`; } }, {passive: true});
+  d.addEventListener("touchend", () => {
+    if (y0 == null) return; y0 = null; d.classList.remove("dragging");
+    if (dy > 110) { closeDrawers(); haptic(); return; }
+    d.classList.add("snap"); d.style.transform = ""; setTimeout(() => d.classList.remove("snap"), 260);
+  });
+});
+
+// Pull down at the top of a screen to refresh.
+(() => {
+  const ind = $("#ptr"); let y0 = null, dy = 0, busy = false;
+  const sheetOpen = () => SHEETS.some(id => !$(id).hidden);
+  addEventListener("touchstart", e => { y0 = (innerWidth <= 760 && scrollY <= 0 && !sheetOpen() && !busy && $("#vApp").hidden === false) ? e.touches[0].clientY : null; dy = 0; }, {passive: true});
+  addEventListener("touchmove", e => { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); const p = Math.min(dy, 110);
+    ind.style.opacity = String(Math.min(1, p / 70)); ind.style.transform = `translateY(${p - 60}px) rotate(${p * 3}deg)`; }, {passive: true});
+  addEventListener("touchend", async () => {
+    if (y0 == null) return; y0 = null;
+    if (dy > 75) { busy = true; haptic(); ind.classList.add("go"); ind.style.transform = "translateY(20px)"; await refresh(); ind.classList.remove("go"); busy = false; toast("Up to date."); }
+    ind.style.transition = "transform .2s, opacity .2s"; ind.style.opacity = "0"; ind.style.transform = "translateY(-70px)"; setTimeout(() => { ind.style.transition = ""; }, 220);
+  });
+})();
+
+// Install as an app.
+let installEvt = null;
+const dismissedInstall = () => { try { return localStorage.getItem("contrail-install") === "later"; } catch (e) { return false; } };
+function renderInstall() {
+  const can = !!installEvt, ios = isIOS && !standalone();
+  $("#mInstall").hidden = !(can || ios);
+  $("#installBanner").hidden = standalone() || dismissedInstall() || !(can || ios);
+  $("#installText").textContent = ios ? "Add Contrail to your Home Screen to use it like an app and get phone alerts." : "Install Contrail as an app for one-tap access and phone alerts.";
+}
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; renderInstall(); });
+addEventListener("appinstalled", () => { installEvt = null; renderInstall(); toast("Contrail is installed. Open it from your home screen or apps."); });
+async function install() {
+  closeDrawers();
+  if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice.catch(() => ({})); installEvt = null; renderInstall(); if (r.outcome === "accepted") haptic(); return; }
+  if (isIOS) { openSheet("#iosSheet"); return; }
+  toast("Use your browser's menu to install or add this page to your home screen.");
+}
+$("#installLater").addEventListener("click", () => { try { localStorage.setItem("contrail-install", "later"); } catch (e) {} renderInstall(); });
+renderInstall();
+
+// Offline notice; refresh when the app comes back to the foreground.
+const net = () => { $("#offline").hidden = navigator.onLine; };
+addEventListener("online", () => { net(); if (S.me) refresh(); }); addEventListener("offline", net); net();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && S.me) refresh(); });
 })();
