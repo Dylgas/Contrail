@@ -339,7 +339,11 @@ function openCall(id) {
     toast("Opening Messages. A note was added; click Save to keep it.");
   };
   if (c && c.source === "AI receptionist") {
-    $("#dQuick").insertAdjacentHTML("beforeend", `<a class="btn btn-line" href="${GROK_CALLS}" target="_blank" rel="noopener" title="Opens Alex's call log. Look for the call from ${esc(c.phone)} at ${esc(fmtTime(c.created_at))}.">Listen in Grok ↗</a>`);
+    $("#dQuick").insertAdjacentHTML("beforeend", `<a class="btn btn-line" href="${GROK_CALLS}" target="_blank" rel="noopener" id="grokLink" title="Opens Alex's call log. Look for the call from ${esc(c.phone)} at ${esc(fmtTime(c.created_at))}.">Listen in Grok ↗</a>`);
+    // Grok has no way to link straight to one recording, so copy the caller's number for its search box.
+    const d = c.phone.replace(/\D/g, ""), e164 = d.length === 10 ? "+1" + d : d.length === 11 ? "+" + d : c.phone;
+    $("#grokLink").onclick = () => { try { navigator.clipboard.writeText(e164); } catch (err) {}
+      toast(`Number copied. In Grok, paste it in the search box and open the call from ${fmtTime(c.created_at)}.`); };
   }
   const own = $("#dOwner");
   if (!c) own.innerHTML = "";
