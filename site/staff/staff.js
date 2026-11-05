@@ -83,7 +83,7 @@ async function load() {
   ]);
   for (const r of [p, c, b, ev]) if (r.error) throw r.error;
   S.profiles = p.data; S.calls = c.data; S.bookings = b.data; S.events = ev.data;
-  const qs = await db.from("quotes").select("id,token,call_id,origin,destination,date_label,created_at,views,viewed_at,expires_at").order("created_at", {ascending: false}).limit(500);
+  const qs = await db.from("quotes").select("id,token,call_id,origin,destination,date_label,created_at,views,viewed_at,expires_at,chosen_option,chosen_at,options").order("created_at", {ascending: false}).limit(500);
   S.quotes = qs.error ? [] : qs.data;   // quote sheets are optional until quotes.sql has been run
 }
 let channel = null;
@@ -483,16 +483,25 @@ $("#qSheetBtn").addEventListener("click", async () => {
   $("#qSheetText").addEventListener("click", () => toast("Opening Messages. Click Save to keep the note."));
   $("#qSheetCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(url); toast("Link copied."); } catch (e) { toast("Select the link above and copy it."); } });
   addNote(`Made a quote sheet: ${r.from}→${r.to} ${r.date}, ${picked.length} option${picked.length > 1 ? "s" : ""}`);
-  haptic(); say($("#qMsg"), "Quote sheet created. Send the link, then click Save.", "ok");
-  const fresh = await db.from("quotes").select("id,token,call_id,origin,destination,date_label,created_at,views,viewed_at,expires_at").order("created_at", {ascending: false}).limit(500);
+  // Follow-up reminder: if nothing is scheduled ahead, put a callback on the calendar 2 days out at 10 AM.
+  const cur = $("#cCallAt").value ? new Date($("#cCallAt").value) : null;
+  let follow = "";
+  if (!cur || cur < new Date()) {
+    const f = new Date(); f.setDate(f.getDate() + 2); f.setHours(10, 0, 0, 0);
+    $("#cCallAt").value = toLocalInput(f.toISOString());
+    if ($("#cStatus").value === "New") $("#cStatus").value = "Scheduled";
+    follow = ` Follow-up set for ${f.toLocaleDateString("en-US", {weekday: "short", month: "short", day: "numeric"})} at 10 AM.`;
+  }
+  haptic(); say($("#qMsg"), `Quote sheet created. Send the link, then click Save.${follow} You'll get an alert when they open it or pick a flight.`, "ok");
+  const fresh = await db.from("quotes").select("id,token,call_id,origin,destination,date_label,created_at,views,viewed_at,expires_at,chosen_option,chosen_at,options").order("created_at", {ascending: false}).limit(500);
   if (!fresh.error) { S.quotes = fresh.data; renderQuotes(c); }
 });
 function renderQuotes(c) {
   const list = c ? S.quotes.filter(q => q.call_id === c.id) : [];
   $("#dQuotes").hidden = !list.length;
   $("#dQuoteList").innerHTML = list.map(q => `<li><a href="${esc(quoteUrl(q.token))}&preview" target="_blank" rel="noopener" style="all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:12px 4px;font-size:14px">
-    <span>${esc(q.origin)} → ${esc(q.destination)} · ${esc(q.date_label || "")}</span><span class="d">${q.views ? `Opened ${q.views}×` : "Not opened yet"}</span>
-    <span class="d">Sent ${esc(fmtDateY(q.created_at))}${new Date(q.expires_at) < new Date() ? " · expired" : ""}</span><span class="d">${q.viewed_at ? esc(ago(q.viewed_at)) : ""}</span></a></li>`).join("");
+    <span>${esc(q.origin)} → ${esc(q.destination)} · ${esc(q.date_label || "")}</span><span class="d">${q.chosen_option != null ? `<b style="color:var(--good,#1f7a4d)">Picked Option ${q.chosen_option + 1}</b>` : q.views ? `Opened ${q.views}×` : "Not opened yet"}</span>
+    <span class="d">Sent ${esc(fmtDateY(q.created_at))}${new Date(q.expires_at) < new Date() ? " · expired" : ""}</span><span class="d">${q.chosen_option != null ? esc(ago(q.chosen_at)) : q.viewed_at ? esc(ago(q.viewed_at)) : ""}</span>${q.chosen_option != null && q.options && q.options[q.chosen_option] ? `<span style="grid-column:1/-1;font-size:13px">${esc(q.options[q.chosen_option].airline)} ${esc(q.options[q.chosen_option].flights)}, ${esc(q.options[q.chosen_option].dep)} → ${esc(q.options[q.chosen_option].arr)}</span>` : ""}</a></li>`).join("");
 }
 $("#qText").addEventListener("click", e => {
   if (!$$("#qOpts input:checked").length) { e.preventDefault(); return; }

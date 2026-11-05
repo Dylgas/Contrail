@@ -1,7 +1,8 @@
 // Contrail: phone alerts for staff.
 //   GET  ?action=key   -> the public key browsers need to subscribe (created on first use, stored server-side)
 //   POST ?action=test  -> sends a test alert to the signed-in staff member's devices (needs their login token)
-//   POST (from the database trigger, with the webhook secret as Bearer) -> alerts every staff device about a new call request
+//   POST (from the database triggers, with the webhook secret as Bearer) -> alerts every staff device about a new call request
+//        ({record}) or quote activity ({alert: {title, body, url, tag}})
 // Deploy with JWT verification OFF; every path checks its own credentials.
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -68,9 +69,14 @@ Deno.serve(async (req) => {
 
     if (req.method === "POST") {
       if (!(await hookOk(req))) return json({ error: "Not allowed." }, 401);
-      const { record: r } = await req.json();
-      if (!r?.id) return json({ error: "No record." }, 400);
+      const { record: r, alert: a } = await req.json();
       const { data: subs } = await db.from("push_subscriptions").select("*");
+      if (a?.title) {   // quote activity: customer opened a quote or picked an option
+        const url = typeof a.url === "string" && a.url.startsWith(STAFF_URL) ? a.url : STAFF_URL + "#calls";
+        const sent = await sendTo(subs || [], { title: String(a.title).slice(0, 120), body: String(a.body || "").slice(0, 200), url, tag: String(a.tag || "quote").slice(0, 60) });
+        return json({ ok: true, sent });
+      }
+      if (!r?.id) return json({ error: "No record." }, 400);
       const what = r.trip || r.message || r.phone || "";
       const sent = await sendTo(subs || [], {
         title: `New call request: ${r.name}`,

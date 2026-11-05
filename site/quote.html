@@ -61,6 +61,13 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
 .steps{margin:0;padding-left:18px;font-size:14px}.steps li{margin-bottom:4px}
 .foot{margin-top:30px;padding-top:14px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--soft);font-size:12px}
 .stamp{position:absolute;top:150px;right:-60px;transform:rotate(28deg);background:#b3261e;color:#fff;font-weight:600;letter-spacing:.2em;padding:6px 80px;font-size:14px}
+.pick{margin-top:9px;font:500 13px var(--f);padding:7px 14px;border-radius:999px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+.pick:hover{background:var(--ink);color:#fff}
+.pick:disabled{opacity:.5;cursor:default}
+tr.chosen td{background:#f3f8f5}tr.chosen td:first-child{box-shadow:inset 3px 0 0 var(--good)}
+tr.chosen .pick{background:var(--good);border-color:var(--good);color:#fff;cursor:default}
+.picked{background:#e7f3ec;color:#0f4f30;padding:12px 16px;margin:0 0 12px;font-size:14px}
+.picked b{font-weight:600}
 .expired{background:#fdf1dc;color:#6b4500;padding:10px 14px;margin-top:18px;font-size:14px}
 .state{max-width:880px;margin:14px auto;background:#fff;padding:48px 52px}
 .state h1{font-weight:500;font-size:28px;margin:8px 0}
@@ -80,11 +87,13 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
   td.tot:not(:empty)::before{content:"Total "}
   .totals{flex-direction:column-reverse}.totals dl{min-width:0;width:100%}.scan{display:none}
   .stamp{top:20px;right:-70px}
+  tr.chosen{background:#f3f8f5;box-shadow:inset 3px 0 0 var(--good);padding-left:10px}tr.chosen td,tr.chosen td:first-child{background:none;box-shadow:none}
+  .pick{padding:9px 16px;font-size:14px}
   .bar .btn{flex:1 1 auto}
 }
 @media print{
   html,body{background:#fff}
-  .bar{display:none}
+  .bar,.pick,.picked{display:none!important}
   .page{box-shadow:none;margin:0;padding:0;max-width:none}
   tr{break-inside:avoid}
   @page{margin:16mm}
@@ -126,6 +135,7 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
     </section>
 
     <h2>Flight options</h2>
+    <div class="picked" id="qPicked" role="status" hidden></div>
     <table class="num">
       <thead><tr><th>Option</th><th>Depart → arrive</th><th>Routing</th><th class="r">Per person</th><th class="r" id="qTotHead">Total</th></tr></thead>
       <tbody id="qOpts"></tbody>
@@ -136,8 +146,9 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
 
     <h2>How to book</h2>
     <ol class="steps">
-      <li>Pick the option you want. Tap <b>Book now</b> to see the live fare and book it on our secure partner checkout.</li>
-      <li>Or call <b>(989) 690-4469</b> and we'll walk you through booking. Have this quote number ready.</li>
+      <li>Tap <b>I want this one</b> on the option you like. Your specialist gets it right away and will call you to book.</li>
+      <li>Or tap <b>Book now</b> to see the live fare and book it yourself on our secure partner checkout.</li>
+      <li>You can also call <b>(989) 690-4469</b> and we'll walk you through booking. Have this quote number ready.</li>
       <li>You pay the airline or our booking partner directly. We never take card numbers by phone or text.</li>
     </ol>
 
@@ -150,7 +161,7 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
       <li>This quote is valid until the date shown above.</li>
     </ol>
 
-    <footer class="foot"><span id="qFootNo"></span><span>Contrail · (989) 690-4469 · Thank you for choosing us</span></footer>
+    <footer class="foot"><span id="qFootNo"></span><span>Contrail · (989) 690-4469 · <a href="privacy.html" style="color:inherit">Privacy &amp; terms</a> · Thank you for choosing us</span></footer>
   </article>
 </div>
 
@@ -201,8 +212,8 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
       const tags = [pr[i] === lowest && isFinite(lowest) && pr.filter(x => x === lowest).length === 1 ? `<span class="tag">Lowest fare</span>` : "",
         arr[i] === earliest && isFinite(earliest) && opts.length > 1 && arr.filter(x => x === earliest).length === 1 ? `<span class="tag alt">Earliest arrival</span>` : "",
         !o.stops && opts.some(x => x.stops) ? `<span class="tag alt">Nonstop</span>` : ""].join("");
-      return `<tr class="${pr[i] === lowest && isFinite(lowest) ? "best" : ""}">
-        <td class="f"><span class="al">Option ${i + 1} · ${esc(o.airline)}</span> <span class="fn">${esc(o.flights)}</span>${o.word ? `<div class="conf ${cls}">Schedule: ${esc(o.word)}</div>` : ""}${tags ? `<div class="tags">${tags}</div>` : ""}</td>
+      return `<tr data-row="${i}">
+        <td class="f"><span class="al">Option ${i + 1} · ${esc(o.airline)}</span> <span class="fn">${esc(o.flights)}</span>${o.word ? `<div class="conf ${cls}">Schedule: ${esc(o.word)}</div>` : ""}${tags ? `<div class="tags">${tags}</div>` : ""}${q.expired ? "" : `<div><button class="pick" type="button" data-i="${i}">I want this one</button></div>`}</td>
         <td class="t">${esc(o.dep)} → ${esc(o.arr)}</td>
         <td class="s">${o.stops ? `1 stop` : "Nonstop"}<span class="via">${esc(q.origin)} → ${o.stops ? esc(o.via) + " → " : ""}${esc(q.destination)}</span></td>
         <td class="r pp">${has(o.price) ? esc(usd(o.price)) : `<span class="lp">Live fare</span>`}</td>
@@ -221,6 +232,36 @@ td .via{display:block;color:var(--soft);font-size:12.5px}
       $("#qQr").innerHTML = qr.createSvgTag({cellSize: 3, margin: 0, scalable: true}); $("#qScan").hidden = false;
     } catch (e) { /* QR library unavailable: the buttons still work */ }
     if (q.note) { $("#qNoteWrap").hidden = false; $("#qNote").textContent = q.note; }
+    const first = (q.customer_name || "").trim().split(/\s+/)[0];
+    const who = q.prepared_name || "your Contrail specialist";
+    const show = (i, fresh) => {
+      document.querySelectorAll("tr[data-row]").forEach(tr => {
+        const on = +tr.dataset.row === i; tr.classList.toggle("chosen", on);
+        const b = tr.querySelector(".pick"); if (b) b.textContent = on ? "✓ Your pick" : "Pick this one instead";
+      });
+      const o = opts[i] || {};
+      $("#qPicked").hidden = false;
+      $("#qPicked").innerHTML = preview
+        ? `<b>Preview:</b> when ${esc(first || "the customer")} taps this, you get a phone alert and the request moves to the top of your list.`
+        : `<b>${fresh ? "Got it" : "Your pick"}: Option ${i + 1}, ${esc(o.airline)} ${esc(o.dep)} → ${esc(o.arr)}.</b> ${fresh ? `We've let ${esc(who)} know and they'll call you shortly to book it.` : `${esc(who)} has been told.`} Want to book it now yourself? Tap <b>Book now</b> at the top.`;
+    };
+    if (q.chosen_option != null && opts[q.chosen_option]) show(q.chosen_option, false);
+    $("#qOpts").addEventListener("click", async e => {
+      const b = e.target.closest(".pick"); if (!b || b.closest("tr.chosen")) return;
+      const i = +b.dataset.i;
+      if (preview) return show(i, true);
+      document.querySelectorAll(".pick").forEach(x => { x.disabled = true; }); b.textContent = "Sending…";
+      try {
+        const r = await fetch(`${CFG.supabaseUrl}/rest/v1/rpc/choose_quote_option`, {method: "POST",
+          headers: {"Content-Type": "application/json", apikey: CFG.supabaseAnonKey, Authorization: `Bearer ${CFG.supabaseAnonKey}`},
+          body: JSON.stringify({t: token, opt: i})});
+        const res = r.ok ? await r.json() : null;
+        if (res && res.ok) show(i, true);
+        else { b.textContent = "I want this one"; $("#qPicked").hidden = false;
+          $("#qPicked").textContent = res && res.slow_down ? "One moment, then tap again." : res && res.expired ? "This quote has expired. Call us at (989) 690-4469 for an updated one." : "That didn't go through. Try again, or call us at (989) 690-4469."; }
+      } catch (err) { b.textContent = "I want this one"; $("#qPicked").hidden = false; $("#qPicked").textContent = "No connection. Try again, or call us at (989) 690-4469."; }
+      document.querySelectorAll(".pick").forEach(x => { x.disabled = false; });
+    });
     $("#loading").hidden = true; $("#quote").hidden = false;
   }).catch(fail);
   $("#qPrint").addEventListener("click", () => window.print());
