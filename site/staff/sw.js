@@ -1,6 +1,6 @@
 /* Contrail Staff service worker: works like an app (opens offline), shows phone alerts, opens the right request when tapped. */
-const CACHE = "contrail-staff-v10";
-const SHELL = ["./", "staff.js?v=10", "../config.js?v=2", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
+const CACHE = "contrail-staff-v11";
+const SHELL = ["./", "staff.js?v=11", "../config.js?v=2", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"];
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}).then(() => self.skipWaiting())); });

@@ -172,7 +172,7 @@ function renderCalls() {
   let rows = S.calls.filter(pass).filter(c => !q || [c.name, c.phone, c.trip, c.email, c.notes, c.message].some(v => (v || "").toLowerCase().includes(q)));
   if (S.filter === "Due today") rows = rows.slice().sort((a, b) => new Date(a.call_at) - new Date(b.call_at));
   $("#callRows").innerHTML = rows.map(c => `<tr data-call="${c.id}"><td class="n">${esc(fmtDate(c.created_at))}<br><span class="dim">${esc(c.source)}</span></td>
-    <td>${esc(c.name)}</td><td class="n">${esc(c.phone)}</td><td class="hide-sm">${esc(c.trip || c.message || "—")}</td><td>${pill(c.status)}</td>
+    <td>${esc(c.name)}${c.recording_path ? ` <span title="Has a recording" aria-label="Has a recording">🎧</span>` : ""}</td><td class="n">${esc(c.phone)}</td><td class="hide-sm">${esc(c.trip || c.message || "—")}</td><td>${pill(c.status)}</td>
     <td class="hide-sm">${c.assigned_to ? esc(nameOf(c.assigned_to)) : `<button class="mini" type="button" data-claim="${c.id}">Claim</button>`}</td><td class="n">${c.call_at ? esc(fmtWhen(c.call_at)) : "—"}</td></tr>`).join("");
   $("#callEmpty").hidden = rows.length > 0;
   $("#callEmpty").textContent = S.filter === "Mine" ? "Nothing assigned to you right now. Claim a request to add it here."
@@ -357,6 +357,7 @@ function openCall(id) {
     if (k && k.calls.length > 1) dc.innerHTML = `${esc(c.name)} has reached us ${k.calls.length} times. <button class="link" type="button" data-cust="${esc(k.key)}">See all</button>`;
   } else dc.hidden = true;
   setupQuote(c);
+  setupRecording(c);
   $("#cStatus").value = c ? c.status : "New";
   $("#cAssign").innerHTML = `<option value="">Nobody yet</option>` + S.profiles.map(p => `<option value="${p.id}">${esc(p.full_name || p.email)}</option>`).join("");
   $("#cAssign").value = c ? (c.assigned_to || "") : S.me.id;
@@ -375,6 +376,51 @@ function openCall(id) {
   };
   const lb = $("#linkBox"); if (lb) { lb.hidden = true; lb.innerHTML = ""; }
 }
+/* ---------- call recordings (uploaded by staff; private, staff-only storage) ---------- */
+const REC_TYPES = {wav: "audio/wav", mp3: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", ogg: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", flac: "audio/flac"};
+async function setupRecording(c) {
+  const box = $("#dRec"), pl = $("#recPlayer"), info = $("#recInfo");
+  box.hidden = !c; pl.pause(); pl.removeAttribute("src"); pl.hidden = true; $("#recDel").hidden = true;
+  if (!c) return;
+  $("#recPick").textContent = c.recording_path ? "Replace recording" : "Add recording";
+  if (!c.recording_path) {
+    info.textContent = c.source === "AI receptionist" ? "Download this call from Grok on your computer (Listen in Grok, then the download button), then add it here so you can play it on your phone." : "Add an audio file of this call if you have one.";
+    return;
+  }
+  info.textContent = "Loading recording…";
+  const {data, error} = await db.storage.from("recordings").createSignedUrl(c.recording_path, 3600);
+  if (S.editing !== c.id) return;   // drawer moved on to another request
+  if (error || !data) { info.textContent = "Couldn't load the recording. Try again in a moment."; return; }
+  pl.src = data.signedUrl; pl.hidden = false; $("#recDel").hidden = false;
+  info.textContent = `Recording · ${c.recording_path.split("/").pop().replace(/^\d+-/, "")}`;
+}
+$("#recFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  const c = S.calls.find(x => x.id === S.editing); if (!f || !c) return;
+  if (f.size > 50 * 1024 * 1024) return toast("That file is over 50 MB. Try a shorter or compressed recording.");
+  const ext = (f.name.split(".").pop() || "").toLowerCase(), type = f.type || REC_TYPES[ext] || "audio/mpeg";
+  if (!/^audio\//.test(type) && !REC_TYPES[ext]) return toast("That doesn't look like an audio file.");
+  const safe = f.name.replace(/[^\w.\-]+/g, "_").slice(-80), path = `${c.id}/${Date.now()}-${safe}`;
+  $("#recInfo").textContent = "Uploading…"; $("#recPick").setAttribute("aria-disabled", "true");
+  const up = await db.storage.from("recordings").upload(path, f, {contentType: /^audio\//.test(type) ? type : REC_TYPES[ext], upsert: false});
+  $("#recPick").removeAttribute("aria-disabled");
+  if (up.error) { $("#recInfo").textContent = "Upload failed: " + up.error.message; return; }
+  const old = c.recording_path;
+  const {error} = await db.from("call_requests").update({recording_path: path}).eq("id", c.id);
+  if (error) { $("#recInfo").textContent = "Uploaded, but couldn't attach it: " + error.message; return; }
+  if (old) db.storage.from("recordings").remove([old]);
+  c.recording_path = path; haptic(); toast("Recording added. You can play it from any device now.");
+  if (S.editing === c.id) setupRecording(c);
+});
+$("#recDel").addEventListener("click", async () => {
+  const c = S.calls.find(x => x.id === S.editing); if (!c || !c.recording_path) return;
+  if ($("#recDel").dataset.sure !== "1") { $("#recDel").dataset.sure = "1"; $("#recDel").textContent = "Tap again to remove"; setTimeout(() => { $("#recDel").dataset.sure = ""; $("#recDel").textContent = "Remove"; }, 3000); return; }
+  $("#recDel").dataset.sure = ""; $("#recDel").textContent = "Remove";
+  const old = c.recording_path;
+  const {error} = await db.from("call_requests").update({recording_path: null}).eq("id", c.id);
+  if (error) return toast("Couldn't remove it: " + error.message);
+  db.storage.from("recordings").remove([old]); c.recording_path = null; toast("Recording removed."); setupRecording(c);
+});
 const SHEETS = ["#drawer", "#evDrawer", "#custDrawer", "#moreSheet", "#iosSheet"];
 function closeDrawers() { $("#scrim").hidden = true; SHEETS.forEach(id => { const d = $(id); d.hidden = true; d.style.transform = ""; }); S.editing = null; S.editingEvent = null; }
 function openSheet(id) { closeDrawers(); $("#scrim").hidden = false; const d = $(id); d.hidden = false; d.scrollTop = 0; }

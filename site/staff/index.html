@@ -157,6 +157,7 @@ td .dim{color:var(--soft);font-size:13px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .linkbox{margin:10px 0 4px;padding:10px 12px;border-radius:10px;background:rgba(127,127,127,.12);font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:4px}
 .linkbox[hidden]{display:none}
+#recPlayer{width:100%;margin-top:6px;height:44px}
 .linkbox a{word-break:break-all;color:inherit;font-weight:500}
 
 /* customers, claim, quote builder, alerts */
@@ -455,6 +456,12 @@ button,.btn,.chip,.tab,.mini{touch-action:manipulation}
     <div class="linkbox" id="linkBox" hidden></div>
     <p class="owner" id="dOwner" style="margin:12px 0 0"></p>
     <p class="sub" id="dCust" style="font-size:14px;margin-top:6px" hidden></p>
+    <div class="rec" id="dRec" hidden>
+      <h2 style="font-size:16px;margin-top:20px">Call recording</h2>
+      <audio id="recPlayer" controls preload="none" hidden></audio>
+      <p class="sub" id="recInfo" style="font-size:13px;margin:6px 0 0"></p>
+      <div class="acts" style="margin-top:8px"><label class="btn btn-line" for="recFile" id="recPick">Add recording</label><input type="file" id="recFile" accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.opus" hidden><button class="btn btn-line" type="button" id="recDel" hidden>Remove</button></div>
+    </div>
     <div id="dQuotes" hidden><h2 style="font-size:16px;margin-top:20px">Quotes sent</h2><ul class="cust-reqs" id="dQuoteList"></ul></div>
     <details class="quote" id="qBox">
       <summary>Quote flights</summary>
@@ -546,6 +553,6 @@ button,.btn,.chip,.tab,.mini{touch-action:manipulation}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="../config.js?v=2"></script>
-<script src="staff.js?v=10"></script>
+<script src="staff.js?v=11"></script>
 </body>
 </html>
